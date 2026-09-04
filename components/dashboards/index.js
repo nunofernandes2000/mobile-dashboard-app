@@ -1,0 +1,11 @@
+export { default as Dashboard } from './Dashboard';
+export { default as AnnouncementsDashboard } from './Announcements';
+export { default as BirthdayDashboard } from './Birthdays';
+export { default as CalendarEventsDashboard } from './CalendarEvents';
+export { default as CoursesAwaitingRegistrationDashboard } from './CoursesAwaitingRegistration';
+export { default as DashboardAnalyticsView } from './shared';
+export { default as FaultyDtpArtifactsDashboard } from './FaultyDtpArtifacts';
+export { default as FaultyDtpArtifactsPrevYearDashboard } from './FaultyDtpArtifactsPrevYear';
+export { default as PedagogicoDashboard } from './Pedagogico';
+export { default as TeachersWithoutUsernameDashboard } from './TeachersWithoutUsername';
+export { default as TicketsDashboard } from './Tickets';

@@ -1,0 +1,42 @@
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "adb reverse tcp:3000 tcp:3000 2>/dev/null || true && expo start",
+    "dev": "npm start",
+    "start:dev": "adb reverse tcp:3000 tcp:3000 2>/dev/null || true && adb reverse tcp:8081 tcp:8081 2>/dev/null || true && EXPO_PUBLIC_ENV=dev expo start --localhost",
+    "start:testjm": "EXPO_PUBLIC_ENV=testjm expo start",
+    "start:testrc": "EXPO_PUBLIC_ENV=testrc expo start",
+    "start:nunolaptop": "EXPO_PUBLIC_ENV=nunolaptop expo start",
+    "android": "bash ./start-android.sh",
+    "android:legacy": "(adb wait-for-device && adb reverse tcp:3000 tcp:3000 &) && expo start --android",
+    "fix": "adb reverse tcp:3000 tcp:3000 && adb reverse tcp:8081 tcp:8081 && echo 'Tuneis restaurados!'",
+    "stop": "kill $(cat /tmp/bff_server.pid 2>/dev/null) 2>/dev/null && echo 'BFF parado' || echo 'BFF nao estava a correr'",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "babel-preset-expo": "~54.0.10",
+    "expo": "~54.0.35",
+    "expo-constants": "~18.0.13",
+    "expo-document-picker": "~14.0.8",
+    "expo-image-picker": "~17.0.11",
+    "expo-linking": "~8.0.12",
+    "expo-secure-store": "~15.0.8",
+    "expo-status-bar": "~3.0.9",
+    "nativewind": "^4.2.6",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-paper": "^5.15.3",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-web": "^0.21.0",
+    "react-native-webview": "13.15.0"
+  },
+  "private": true,
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Nuno Fernandes - Projeto final de Curso",
+    "slug": "oauth-ipp",
+    "version": "1.0.0",
+    "scheme": "oauth-ipp",
+    "orientation": "portrait",
+    "icon": "./assets/upp_logo_clean.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/upp_logo_clean.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "pt.ipp.oauth"
+    },
+    "android": {
+      "package": "pt.ipp.oauth",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/upp_logo_clean.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "oauth-ipp"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}
