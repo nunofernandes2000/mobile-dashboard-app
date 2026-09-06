@@ -42,9 +42,11 @@ export default function PedagogicoDashboard({ token, bffHost, onBack }) {
       if (!res.ok) return { value: null, simulated: true };
       const data = await res.json();
 
+      const target = data.result?.response ?? data.result;
       const val =
-        data.result?.alertValueFloat ??
-        (data.result?.alertValueStr ? parseFloat(data.result.alertValueStr) : null);
+        target?.alertValueFloat ??
+        (target?.alertValueStr ? parseFloat(target.alertValueStr) : null) ??
+        (Array.isArray(target?.alerts) && target.alerts[0]?.alertValueFloat != null ? target.alerts[0].alertValueFloat : null);
 
       return { value: val, simulated: data.simulated };
     } catch (e) {
@@ -60,7 +62,8 @@ export default function PedagogicoDashboard({ token, bffHost, onBack }) {
       if (!res.ok) return { values: [], simulated: true };
       const data = await res.json();
 
-      const alerts = data.result?.alerts || data.result?.entities || [];
+      const target = data.result?.response ?? data.result;
+      const alerts = target?.alerts || target?.entities || (Array.isArray(target) ? target : []);
       if (!Array.isArray(alerts)) return { values: [], simulated: false };
 
       const values = alerts.map((item) => {
