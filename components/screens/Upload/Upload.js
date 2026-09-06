@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Text, TouchableOpacity } from 'react-native';
-import { Snackbar, Icon, ProgressBar } from 'react-native-paper';
+import { Icon, ProgressBar } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { formatDatePt as formatDate } from '../../../utils/formatters';
@@ -58,8 +58,6 @@ export default function Upload({ token, bffHost, onBack }) {
     title: '',
     message: '',
   });
-  const [feedbackSnackbarMessage, setFeedbackSnackbarMessage] = useState('');
-  const [isSnackbarVisible, setIsSnackbarVisible] = useState(false);
 
   // Atualiza a lista a cada 5 segundos para detetar novos pedidos da web
   useEffect(() => {
@@ -145,12 +143,12 @@ export default function Upload({ token, bffHost, onBack }) {
       if (!file) return;
 
       setFulfillingRequestUuid(requestItem.uuid);
-      setUploadProgress(0.20);
-      setUploadStepLabel('A enviar ficheiro para o servidor...');
+      setUploadProgress(0.35);
+      setUploadStepLabel('A enviar ficheiro para o servidor PAE...');
 
-      // Envia o ficheiro selecionado para o servidor
+      // Envia o ficheiro selecionado para o servidor com name="file" (pág. 45-46 do PDF)
       const formData = new FormData();
-      formData.append('files', file);
+      formData.append('file', file);
 
       const uploadRes = await fetch(`${bffHost}/files/upload`, {
         method: 'POST',
@@ -160,17 +158,14 @@ export default function Upload({ token, bffHost, onBack }) {
 
       if (!uploadRes.ok) throw new Error(`Falha no upload do ficheiro (${uploadRes.status})`);
       const uploadData = await uploadRes.json();
-      const fileUploaded = uploadData.uploadedFiles?.[0] || uploadData.files?.[0] || uploadData;
+      const fileUploaded = uploadData.uploadedFiles?.[0] || uploadData.fileUploaded;
 
-      setUploadProgress(0.60);
-      setUploadStepLabel('A gravar ficheiro temporário no PAE...');
+      if (!fileUploaded) {
+        throw new Error('Servidor não retornou dados válidos do ficheiro.');
+      }
 
-      // Dá tempo ao PAE de persistir o ficheiro temporário no storage
-      // O delay é necessário para garantir que o ficheiro é gravado no storage antes de ser associado ao pedido
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      setUploadProgress(0.85);
-      setUploadStepLabel('A associar documento ao pedido...');
+      setUploadProgress(0.75);
+      setUploadStepLabel('A associar documento ao pedido no PAE...');
 
       // Associa o ficheiro carregado ao pedido requisitado
       const fulfillRes = await fetch(`${bffHost}/filerequests/fulfill`, {
@@ -393,8 +388,9 @@ export default function Upload({ token, bffHost, onBack }) {
       >
         <View className="items-center py-4 px-2">
           <View
-            className={`w-16 h-16 rounded-full items-center justify-center mb-3 ${feedbackAlert.type === 'success' ? 'bg-green-100 dark:bg-green-950/50' : 'bg-red-100 dark:bg-red-950/50'
-              }`}
+            className={`w-16 h-16 rounded-full items-center justify-center mb-3 ${
+              feedbackAlert.type === 'success' ? 'bg-green-100 dark:bg-green-950/50' : 'bg-red-100 dark:bg-red-950/50'
+            }`}
           >
             <Icon
               source={feedbackAlert.type === 'success' ? 'check-circle' : 'alert-circle'}
@@ -421,15 +417,6 @@ export default function Upload({ token, bffHost, onBack }) {
           </Button>
         </View>
       </Dialog>
-
-      <Snackbar
-        visible={isSnackbarVisible}
-        onDismiss={() => setIsSnackbarVisible(false)}
-        duration={3500}
-        action={{ label: 'OK', onPress: () => setIsSnackbarVisible(false) }}
-      >
-        {feedbackSnackbarMessage}
-      </Snackbar>
     </View>
   );
 }
