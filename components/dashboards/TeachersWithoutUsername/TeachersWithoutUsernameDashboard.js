@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Linking, TouchableOpacity, Text } from 'react-native';
+import { View, Linking, TouchableOpacity, Text } from 'react-native';
 import { Icon } from 'react-native-paper';
 import DashboardAnalyticsView from '../shared/DashboardAnalyticsView';
 import { normalizeStr } from '../../../utils/text';
@@ -10,12 +10,10 @@ import {
   Badge,
   SearchInput,
   FilterBar,
-  Button,
-  LoadingState,
   SkeletonList,
   EmptyState,
   ErrorCard,
-  Header,
+  ScreenContainer,
 } from '../../ui';
 
 function isTestOrInvalidRecord(item) {
@@ -118,20 +116,15 @@ export default function TeachersWithoutUsernameDashboard({ token, bffHost, onBac
   }, [rawEntities, searchText, hideTestRecords, codeTypeFilter, sortBy, sortDirection]);
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark">
-      <Header
-        title="Docentes sem Username"
-        subtitle="Auditoria de Contas & Perfis"
-        onBack={onBack}
-        rightIcon="refresh"
-        onRightAction={fetchTeachers}
-      />
-
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScreenContainer
+      title="Docentes sem Username"
+      subtitle="Auditoria de Contas & Perfis"
+      onBack={onBack}
+      rightIcon="refresh"
+      onRightAction={fetchTeachers}
+      onRefresh={fetchTeachers}
+      refreshing={loading}
+    >
         <View className="flex-row justify-between gap-2.5 mb-4">
           <View className="flex-1">
             <StatCard
@@ -321,7 +314,6 @@ export default function TeachersWithoutUsernameDashboard({ token, bffHost, onBac
             })}
           </View>
         )}
-      </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }

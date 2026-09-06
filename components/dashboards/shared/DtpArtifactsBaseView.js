@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Linking, TouchableOpacity, Text } from 'react-native';
+import { View, Linking, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { Icon } from 'react-native-paper';
 import DashboardAnalyticsView from './DashboardAnalyticsView';
 import { normalizeStr } from '../../../utils/text';
@@ -8,12 +8,11 @@ import {
   CardContent,
   Badge,
   SearchInput,
-  LoadingState,
   SkeletonList,
   EmptyState,
   ErrorCard,
-  Header,
   FilterBar,
+  ScreenContainer,
 } from '../../ui';
 
 function parseAlertCategory(alertDescription) {
@@ -206,20 +205,15 @@ export function DtpArtifactsBaseView({
   ];
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark">
-      <Header
-        title={title}
-        subtitle={subtitle}
-        onBack={onBack}
-        rightIcon="refresh"
-        onRightAction={fetchDtpAlerts}
-      />
-
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScreenContainer
+      title={title}
+      subtitle={subtitle}
+      onBack={onBack}
+      rightIcon="refresh"
+      onRightAction={fetchDtpAlerts}
+      onRefresh={fetchDtpAlerts}
+      refreshing={isLoadingAlerts}
+    >
         <View className="flex-row items-center justify-between gap-2 mb-3">
           <View className="flex-1">
             <SearchInput
@@ -435,8 +429,7 @@ export function DtpArtifactsBaseView({
             );
           })
         )}
-      </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 

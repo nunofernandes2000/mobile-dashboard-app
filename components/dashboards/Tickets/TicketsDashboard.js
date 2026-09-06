@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Linking, Text } from 'react-native';
+import { View, Linking, Text } from 'react-native';
 import { Icon, ProgressBar } from 'react-native-paper';
 import { normalizeStr } from '../../../utils/text';
 import {
@@ -9,11 +9,10 @@ import {
   Badge,
   SearchInput,
   Button,
-  LoadingState,
   SkeletonList,
   EmptyState,
   ErrorCard,
-  Header,
+  ScreenContainer,
 } from '../../ui';
 
 export default function TicketsDashboard({ token, bffHost, onBack }) {
@@ -80,20 +79,15 @@ export default function TicketsDashboard({ token, bffHost, onBack }) {
   };
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark">
-      <Header
-        title="Tickets Abertos"
-        subtitle="Por Categoria Monitorizada"
-        onBack={onBack}
-        rightIcon="refresh"
-        onRightAction={fetchTickets}
-      />
-
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScreenContainer
+      title="Tickets Abertos"
+      subtitle="Por Categoria Monitorizada"
+      onBack={onBack}
+      rightIcon="refresh"
+      onRightAction={fetchTickets}
+      onRefresh={fetchTickets}
+      refreshing={loading}
+    >
         {isSimulated && (
           <Badge variant="warning" icon="information-outline" size="sm" className="mb-3 self-start">
             Modo de demonstração (Dados simulados de Tickets)
@@ -197,7 +191,6 @@ export default function TicketsDashboard({ token, bffHost, onBack }) {
             )}
           </View>
         )}
-      </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }

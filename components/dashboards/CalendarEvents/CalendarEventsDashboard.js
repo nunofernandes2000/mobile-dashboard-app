@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Linking, Text } from 'react-native';
+import { View, Linking, Text, ScrollView } from 'react-native';
 import { Icon } from 'react-native-paper';
 import { normalizeStr } from '../../../utils/text';
 import {
@@ -14,11 +14,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogFooter,
-  LoadingState,
   SkeletonList,
   EmptyState,
   ErrorCard,
-  Header,
+  ScreenContainer,
 } from '../../ui';
 
 function getEventTypeBadge(eventType) {
@@ -146,20 +145,88 @@ export default function CalendarEventsDashboard({ token, bffHost, onBack }) {
   }, [events, uniqueUcs]);
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark">
-      <Header
-        title="Eventos & Avaliações"
-        subtitle="Calendário das UCs"
-        onBack={onBack}
-        rightIcon="refresh"
-        onRightAction={fetchCalendarEvents}
-      />
+    <ScreenContainer
+      title="Eventos & Avaliações"
+      subtitle="Calendário das UCs"
+      onBack={onBack}
+      rightIcon="refresh"
+      onRightAction={fetchCalendarEvents}
+      onRefresh={fetchCalendarEvents}
+      refreshing={loading}
+      extra={
+        <Dialog visible={!!selectedEventDetails} onDismiss={() => setSelectedEventDetails(null)}>
+          {selectedEventDetails && (() => {
+            const meta = selectedEventDetails.metadata || {};
+            const eventTypeInfo = getEventTypeBadge(meta.eventType);
 
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}
-      >
+            return (
+              <>
+                <DialogHeader onClose={() => setSelectedEventDetails(null)}>
+                  <Badge variant={eventTypeInfo.variant} size="sm" className="mb-1">
+                    {eventTypeInfo.label}
+                  </Badge>
+                  <DialogTitle numberOfLines={2}>
+                    {meta.assignementTitle || selectedEventDetails.name}
+                  </DialogTitle>
+                </DialogHeader>
+
+                <DialogContent scrollable>
+                  <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
+                    Unidade Curricular
+                  </Text>
+                  <Text className="font-bold text-sm text-primary mb-3">
+                    {meta.ucName || selectedEventDetails.name} ({meta.ucCode || selectedEventDetails.code}) — {meta.courseName || 'Licenciatura'}
+                  </Text>
+
+                  <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
+                    Data Limite / Realização
+                  </Text>
+                  <Text className="text-xs text-slate-800 dark:text-slate-200 mb-3">
+                    {meta.assignementDate || (selectedEventDetails.timestamp ? new Date(selectedEventDetails.timestamp).toLocaleDateString('pt-PT') : 'N/D')}
+                  </Text>
+
+                  <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
+                    Docente Responsável
+                  </Text>
+                  <Text className="text-xs text-slate-800 dark:text-slate-200 mb-3">
+                    {meta.personName || 'Docente'} ({meta.personEmail || 'Sem email'})
+                  </Text>
+
+                  {meta.assignementDescription ? (
+                    <>
+                      <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider mb-1">
+                        Descrição / Instruções
+                      </Text>
+                      <View className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3.5 border border-border dark:border-border-dark my-1">
+                        <Text className="text-sm text-slate-900 dark:text-white leading-relaxed">
+                          {meta.assignementDescription}
+                        </Text>
+                      </View>
+                    </>
+                  ) : null}
+                </DialogContent>
+
+                <DialogFooter>
+                  {selectedEventDetails.url && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      icon="open-in-new"
+                      onPress={() => Linking.openURL(selectedEventDetails.url)}
+                    >
+                      Abrir no Moodle / PAE
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" onPress={() => setSelectedEventDetails(null)}>
+                    Fechar
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </Dialog>
+      }
+    >
         {isMock && (
           <Badge variant="warning" icon="information-outline" size="sm" className="mb-3 self-start">
             Modo de demonstração (Eventos simulados de Calendário)
@@ -352,79 +419,6 @@ export default function CalendarEventsDashboard({ token, bffHost, onBack }) {
             })}
           </View>
         )}
-      </ScrollView>
-
-      <Dialog visible={!!selectedEventDetails} onDismiss={() => setSelectedEventDetails(null)}>
-        {selectedEventDetails && (() => {
-          const meta = selectedEventDetails.metadata || {};
-          const eventTypeInfo = getEventTypeBadge(meta.eventType);
-
-          return (
-            <>
-              <DialogHeader onClose={() => setSelectedEventDetails(null)}>
-                <Badge variant={eventTypeInfo.variant} size="sm" className="mb-1">
-                  {eventTypeInfo.label}
-                </Badge>
-                <DialogTitle numberOfLines={2}>
-                  {meta.assignementTitle || selectedEventDetails.name}
-                </DialogTitle>
-              </DialogHeader>
-
-              <DialogContent scrollable>
-                <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
-                  Unidade Curricular
-                </Text>
-                <Text className="font-bold text-sm text-primary mb-3">
-                  {meta.ucName} ({meta.ucCode}) — {meta.courseName}
-                </Text>
-
-                <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
-                  Data e Prazo
-                </Text>
-                <Text className="text-xs text-slate-800 dark:text-slate-200 mb-3">
-                  {meta.assignementDate || 'N/D'}
-                </Text>
-
-                <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
-                  Responsável
-                </Text>
-                <Text className="text-xs text-slate-800 dark:text-slate-200 mb-3">
-                  {meta.personName || 'Docente'} ({meta.personEmail || 'Sem email'})
-                </Text>
-
-                {meta.assignementDescription ? (
-                  <>
-                    <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider mb-1">
-                      Descrição / Instruções
-                    </Text>
-                    <View className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3.5 border border-border dark:border-border-dark my-1">
-                      <Text className="text-sm text-slate-900 dark:text-white leading-relaxed">
-                        {meta.assignementDescription}
-                      </Text>
-                    </View>
-                  </>
-                ) : null}
-              </DialogContent>
-
-              <DialogFooter>
-                {selectedEventDetails.url && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    icon="open-in-new"
-                    onPress={() => Linking.openURL(selectedEventDetails.url)}
-                  >
-                    Abrir no Moodle / PAE
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" onPress={() => setSelectedEventDetails(null)}>
-                  Fechar
-                </Button>
-              </DialogFooter>
-            </>
-          );
-        })()}
-      </Dialog>
-    </View>
+    </ScreenContainer>
   );
 }

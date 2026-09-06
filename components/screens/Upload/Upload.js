@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Icon, ProgressBar } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,7 +17,7 @@ import {
   LoadingState,
   EmptyState,
   ErrorCard,
-  Header,
+  ScreenContainer,
 } from '../../ui';
 
 const MEDIA_SOURCES = [
@@ -207,19 +207,93 @@ export default function Upload({ token, bffHost, onBack }) {
   };
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark">
-      <Header
-        title="Pedidos de Ficheiros"
-        onBack={onBack}
-        rightIcon="refresh"
-        onRightAction={() => fetchPendingFileRequests(false)}
-      />
+    <ScreenContainer
+      title="Pedidos de Ficheiros"
+      onBack={onBack}
+      rightIcon="refresh"
+      onRightAction={() => fetchPendingFileRequests(false)}
+      onRefresh={() => fetchPendingFileRequests(false)}
+      refreshing={isLoadingRequests}
+      contentContainerStyle={{ paddingBottom: 120 }}
+      extra={
+        <>
+          <Dialog visible={isMediaSourcePickerVisible} onDismiss={() => setIsMediaSourcePickerVisible(false)}>
+            <DialogHeader onClose={() => setIsMediaSourcePickerVisible(false)}>
+              <DialogTitle>Como pretende enviar o documento?</DialogTitle>
+            </DialogHeader>
+            <DialogContent>
+              {selectedFileRequestItem && (
+                <Text className="text-xs text-muted dark:text-muted-dark mb-3">
+                  Para: <Text className="font-bold text-slate-800 dark:text-slate-200">{selectedFileRequestItem.description}</Text>
+                </Text>
+              )}
 
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-      >
+              {MEDIA_SOURCES.map((source) => (
+                <TouchableOpacity
+                  key={source.id}
+                  onPress={() => handleFulfillRequest(source.id)}
+                  activeOpacity={0.7}
+                  className="flex-row items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800 mb-2"
+                >
+                  <View className="w-10 h-10 rounded-xl bg-primary/15 items-center justify-center mr-3">
+                    <Icon source={source.icon} size={22} color="#f57c00" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-bold text-sm text-slate-900 dark:text-white">
+                      {source.title}
+                    </Text>
+                    <Text className="text-xs text-muted dark:text-muted-dark mt-0.5">
+                      {source.description}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </DialogContent>
+            <DialogFooter>
+              <Button variant="ghost" size="sm" onPress={() => setIsMediaSourcePickerVisible(false)}>
+                Cancelar
+              </Button>
+            </DialogFooter>
+          </Dialog>
+
+          <Dialog
+            visible={feedbackAlert.visible}
+            onDismiss={() => setFeedbackAlert((prev) => ({ ...prev, visible: false }))}
+          >
+            <View className="items-center py-4 px-2">
+              <View
+                className={`w-16 h-16 rounded-full items-center justify-center mb-3 ${
+                  feedbackAlert.type === 'success' ? 'bg-green-100 dark:bg-green-950/50' : 'bg-red-100 dark:bg-red-950/50'
+                }`}
+              >
+                <Icon
+                  source={feedbackAlert.type === 'success' ? 'check-circle' : 'alert-circle'}
+                  size={36}
+                  color={feedbackAlert.type === 'success' ? '#16a34a' : '#dc2626'}
+                />
+              </View>
+
+              <Text className="text-lg font-bold text-slate-900 dark:text-white text-center">
+                {feedbackAlert.title}
+              </Text>
+
+              <Text className="text-xs text-muted dark:text-muted-dark text-center mt-2 leading-5">
+                {feedbackAlert.message}
+              </Text>
+
+              <Button
+                variant={feedbackAlert.type === 'success' ? 'default' : 'destructive'}
+                size="sm"
+                className="mt-5 w-full"
+                onPress={() => setFeedbackAlert((prev) => ({ ...prev, visible: false }))}
+              >
+                {feedbackAlert.type === 'success' ? 'Excelente' : 'Fechar'}
+              </Button>
+            </View>
+          </Dialog>
+        </>
+      }
+    >
         <Card className="mb-4 bg-card dark:bg-card-dark border border-border dark:border-border-dark">
           <CardContent className="flex-row items-center py-3">
             <View className="w-12 h-12 rounded-2xl bg-primary/15 items-center justify-center mr-3">
@@ -340,83 +414,6 @@ export default function Upload({ token, bffHost, onBack }) {
             );
           })
         )}
-      </ScrollView>
-
-      <Dialog visible={isMediaSourcePickerVisible} onDismiss={() => setIsMediaSourcePickerVisible(false)}>
-        <DialogHeader onClose={() => setIsMediaSourcePickerVisible(false)}>
-          <DialogTitle>Como pretende enviar o documento?</DialogTitle>
-        </DialogHeader>
-        <DialogContent>
-          {selectedFileRequestItem && (
-            <Text className="text-xs text-muted dark:text-muted-dark mb-3">
-              Para: <Text className="font-bold text-slate-800 dark:text-slate-200">{selectedFileRequestItem.description}</Text>
-            </Text>
-          )}
-
-          {MEDIA_SOURCES.map((source) => (
-            <TouchableOpacity
-              key={source.id}
-              onPress={() => handleFulfillRequest(source.id)}
-              activeOpacity={0.7}
-              className="flex-row items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800 mb-2"
-            >
-              <View className="w-10 h-10 rounded-xl bg-primary/15 items-center justify-center mr-3">
-                <Icon source={source.icon} size={22} color="#f57c00" />
-              </View>
-              <View className="flex-1">
-                <Text className="font-bold text-sm text-slate-900 dark:text-white">
-                  {source.title}
-                </Text>
-                <Text className="text-xs text-muted dark:text-muted-dark mt-0.5">
-                  {source.description}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </DialogContent>
-        <DialogFooter>
-          <Button variant="ghost" size="sm" onPress={() => setIsMediaSourcePickerVisible(false)}>
-            Cancelar
-          </Button>
-        </DialogFooter>
-      </Dialog>
-
-      {/* Modal de Feedback visual estilo SweetAlert */}
-      <Dialog
-        visible={feedbackAlert.visible}
-        onDismiss={() => setFeedbackAlert((prev) => ({ ...prev, visible: false }))}
-      >
-        <View className="items-center py-4 px-2">
-          <View
-            className={`w-16 h-16 rounded-full items-center justify-center mb-3 ${
-              feedbackAlert.type === 'success' ? 'bg-green-100 dark:bg-green-950/50' : 'bg-red-100 dark:bg-red-950/50'
-            }`}
-          >
-            <Icon
-              source={feedbackAlert.type === 'success' ? 'check-circle' : 'alert-circle'}
-              size={36}
-              color={feedbackAlert.type === 'success' ? '#16a34a' : '#dc2626'}
-            />
-          </View>
-
-          <Text className="text-lg font-bold text-slate-900 dark:text-white text-center">
-            {feedbackAlert.title}
-          </Text>
-
-          <Text className="text-xs text-muted dark:text-muted-dark text-center mt-2 leading-5">
-            {feedbackAlert.message}
-          </Text>
-
-          <Button
-            variant={feedbackAlert.type === 'success' ? 'default' : 'destructive'}
-            size="sm"
-            className="mt-5 w-full"
-            onPress={() => setFeedbackAlert((prev) => ({ ...prev, visible: false }))}
-          >
-            {feedbackAlert.type === 'success' ? 'Excelente' : 'Fechar'}
-          </Button>
-        </View>
-      </Dialog>
-    </View>
+    </ScreenContainer>
   );
 }

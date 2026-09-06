@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 import {
   Card,
   CardContent,
-  StatCard,
   Badge,
-  Button,
-  LoadingState,
   SkeletonList,
   EmptyState,
   ErrorCard,
-  Header,
+  ScreenContainer,
 } from '../../ui';
 
 export default function PedagogicoDashboard({ token, bffHost, onBack }) {
@@ -182,20 +179,15 @@ export default function PedagogicoDashboard({ token, bffHost, onBack }) {
   }, [studentsData, selectedSchool]);
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark">
-      <Header
-        title="Inquéritos Pedagógicos"
-        subtitle="Satisfação dos Estudantes"
-        onBack={onBack}
-        rightIcon="refresh"
-        onRightAction={fetchData}
-      />
-
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScreenContainer
+      title="Inquéritos Pedagógicos"
+      subtitle="Satisfação dos Estudantes"
+      onBack={onBack}
+      rightIcon="refresh"
+      onRightAction={fetchData}
+      onRefresh={fetchData}
+      refreshing={loading}
+    >
         {isSimulated && (
           <Badge variant="warning" icon="information-outline" size="sm" className="mb-3 self-start">
             Modo de demonstração (Dados simulados de Inquéritos)
@@ -344,7 +336,6 @@ export default function PedagogicoDashboard({ token, bffHost, onBack }) {
             ))}
           </View>
         )}
-      </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }

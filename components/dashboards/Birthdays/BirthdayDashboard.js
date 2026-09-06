@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 import { Icon } from 'react-native-paper';
 import DashboardAnalyticsView from '../shared/DashboardAnalyticsView';
 import { normalizeStr } from '../../../utils/text';
@@ -10,12 +10,10 @@ import {
   Badge,
   SearchInput,
   FilterBar,
-  Button,
-  LoadingState,
   SkeletonList,
   EmptyState,
   ErrorCard,
-  Header,
+  ScreenContainer,
 } from '../../ui';
 
 export default function BirthdayDashboard({ token, bffHost, onBack }) {
@@ -227,20 +225,15 @@ export default function BirthdayDashboard({ token, bffHost, onBack }) {
   };
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark">
-      <Header
-        title="Aniversários"
-        subtitle="Pessoal & Colaboradores IPP"
-        onBack={onBack}
-        rightIcon="refresh"
-        onRightAction={fetchBirthdays}
-      />
-
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScreenContainer
+      title="Aniversários"
+      subtitle="Pessoal & Colaboradores IPP"
+      onBack={onBack}
+      rightIcon="refresh"
+      onRightAction={fetchBirthdays}
+      onRefresh={fetchBirthdays}
+      refreshing={loading}
+    >
         {isSimulated && (
           <Badge variant="warning" icon="information-outline" size="sm" className="mb-3 self-start">
             Modo de demonstração (Dados simulados de Aniversários)
@@ -441,7 +434,6 @@ export default function BirthdayDashboard({ token, bffHost, onBack }) {
             })}
           </View>
         )}
-      </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }

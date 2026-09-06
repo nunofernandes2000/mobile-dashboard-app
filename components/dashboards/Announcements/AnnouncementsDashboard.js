@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Linking, Text } from 'react-native';
+import { View, Linking, Text, ScrollView } from 'react-native';
 import { Icon } from 'react-native-paper';
 import { normalizeStr, cleanFormattedText } from '../../../utils/text';
 import {
@@ -14,11 +14,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogFooter,
-  LoadingState,
   SkeletonList,
   EmptyState,
   ErrorCard,
-  Header,
+  ScreenContainer,
 } from '../../ui';
 
 export default function AnnouncementsDashboard({ token, bffHost, onBack }) {
@@ -119,20 +118,77 @@ export default function AnnouncementsDashboard({ token, bffHost, onBack }) {
   }, [announcements, uniqueUcs]);
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark">
-      <Header
-        title="Anúncios de UCs"
-        subtitle="Notificações e Avisos"
-        onBack={onBack}
-        rightIcon="refresh"
-        onRightAction={fetchAnnouncements}
-      />
+    <ScreenContainer
+      title="Anúncios de UCs"
+      subtitle="Notificações e Avisos"
+      onBack={onBack}
+      rightIcon="refresh"
+      onRightAction={fetchAnnouncements}
+      onRefresh={fetchAnnouncements}
+      refreshing={loading}
+      extra={
+        <Dialog visible={!!selectedAnnouncement} onDismiss={() => setSelectedAnnouncement(null)}>
+          {selectedAnnouncement && (() => {
+            const meta = selectedAnnouncement.metadata || {};
+            const plainText = cleanFormattedText(meta.announcementText || selectedAnnouncement.obs || '');
 
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}
-      >
+            return (
+              <>
+                <DialogHeader onClose={() => setSelectedAnnouncement(null)}>
+                  <Badge variant="default" size="sm" className="mb-1">
+                    Anúncio de UC
+                  </Badge>
+                  <DialogTitle numberOfLines={2}>
+                    {meta.announcementTitle || selectedAnnouncement.name}
+                  </DialogTitle>
+                </DialogHeader>
+
+                <DialogContent scrollable>
+                  <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
+                    Unidade Curricular
+                  </Text>
+                  <Text className="font-bold text-sm text-primary mb-3">
+                    {meta.ucName} ({meta.ucCode}) — {meta.courseName}
+                  </Text>
+
+                  <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
+                    Publicado por
+                  </Text>
+                  <Text className="text-xs text-slate-800 dark:text-slate-200 mb-3">
+                    {meta.personName || 'Docente'} ({meta.personEmail || selectedAnnouncement.email || 'Sem email'}) — {meta.announcementDate || 'N/D'}
+                  </Text>
+
+                  <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider mb-1">
+                    Conteúdo do Anúncio
+                  </Text>
+                  <View className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3.5 border border-border dark:border-border-dark my-1">
+                    <Text className="text-sm text-slate-900 dark:text-white leading-relaxed">
+                      {plainText}
+                    </Text>
+                  </View>
+                </DialogContent>
+
+                <DialogFooter>
+                  {selectedAnnouncement.url && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      icon="open-in-new"
+                      onPress={() => Linking.openURL(selectedAnnouncement.url)}
+                    >
+                      Abrir no Moodle / PAE
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" onPress={() => setSelectedAnnouncement(null)}>
+                    Fechar
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </Dialog>
+      }
+    >
         {isMock && (
           <Badge variant="warning" icon="information-outline" size="sm" className="mb-3 self-start">
             Modo de demonstração ativado (Anúncios simulados de UCs)
@@ -298,68 +354,6 @@ export default function AnnouncementsDashboard({ token, bffHost, onBack }) {
             })}
           </View>
         )}
-      </ScrollView>
-
-      <Dialog visible={!!selectedAnnouncement} onDismiss={() => setSelectedAnnouncement(null)}>
-        {selectedAnnouncement && (() => {
-          const meta = selectedAnnouncement.metadata || {};
-          const plainText = cleanFormattedText(meta.announcementText || selectedAnnouncement.obs || '');
-
-          return (
-            <>
-              <DialogHeader onClose={() => setSelectedAnnouncement(null)}>
-                <Badge variant="default" size="sm" className="mb-1">
-                  Anúncio de UC
-                </Badge>
-                <DialogTitle numberOfLines={2}>
-                  {meta.announcementTitle || selectedAnnouncement.name}
-                </DialogTitle>
-              </DialogHeader>
-
-              <DialogContent scrollable>
-                <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
-                  Unidade Curricular
-                </Text>
-                <Text className="font-bold text-sm text-primary mb-3">
-                  {meta.ucName} ({meta.ucCode}) — {meta.courseName}
-                </Text>
-
-                <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider">
-                  Publicado por
-                </Text>
-                <Text className="text-xs text-slate-800 dark:text-slate-200 mb-3">
-                  {meta.personName || 'Docente'} ({meta.personEmail || selectedAnnouncement.email || 'Sem email'}) — {meta.announcementDate || 'N/D'}
-                </Text>
-
-                <Text className="text-xs font-bold text-muted dark:text-muted-dark uppercase tracking-wider mb-1">
-                  Conteúdo do Anúncio
-                </Text>
-                <View className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3.5 border border-border dark:border-border-dark my-1">
-                  <Text className="text-sm text-slate-900 dark:text-white leading-relaxed">
-                    {plainText}
-                  </Text>
-                </View>
-              </DialogContent>
-
-              <DialogFooter>
-                {selectedAnnouncement.url && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    icon="open-in-new"
-                    onPress={() => Linking.openURL(selectedAnnouncement.url)}
-                  >
-                    Abrir no Moodle / PAE
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" onPress={() => setSelectedAnnouncement(null)}>
-                  Fechar
-                </Button>
-              </DialogFooter>
-            </>
-          );
-        })()}
-      </Dialog>
-    </View>
+    </ScreenContainer>
   );
 }

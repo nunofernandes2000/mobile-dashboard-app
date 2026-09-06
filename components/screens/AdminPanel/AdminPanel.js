@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, FlatList, Text } from 'react-native';
+import { View, TouchableOpacity, FlatList, Text } from 'react-native';
 import { Checkbox, Icon } from 'react-native-paper';
 import {
   Card,
@@ -11,10 +11,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogFooter,
-  LoadingState,
   SkeletonList,
   EmptyState,
-  Header,
+  ScreenContainer,
 } from '../../ui';
 import { normalizeStr } from '../../../utils/text';
 
@@ -186,178 +185,177 @@ export default function AdminPanel({ token, bffHost, onBack }) {
   };
 
   return (
-    <View className="flex-1 bg-background dark:bg-background-dark">
-      <Header
-        title="Administração"
-        onBack={onBack}
+    <ScreenContainer
+      title="Administração"
+      subtitle="Permissões de Acesso por Módulo"
+      onBack={onBack}
+      onRefresh={fetchAdminData}
+      refreshing={loading}
+      extra={
+        <>
+          <Dialog visible={!!selectedModuleForEdit} onDismiss={() => !isSavingAccessRules && setSelectedModuleForEdit(null)}>
+            <DialogHeader onClose={() => !isSavingAccessRules && setSelectedModuleForEdit(null)}>
+              <DialogTitle numberOfLines={1}>Acessos: {selectedModuleForEdit?.title}</DialogTitle>
+            </DialogHeader>
+
+            <DialogContent>
+              <Text className="text-xs text-muted dark:text-muted-dark mb-2.5">
+                Selecione as roles autorizadas a aceder a este módulo:
+              </Text>
+
+              <SearchInput
+                placeholder="Pesquisar role..."
+                value={roleSearchQuery}
+                onChangeText={setRoleSearchQuery}
+                className="mb-2.5"
+              />
+
+              <View className="flex-row justify-between mb-2">
+                <Button variant="ghost" size="sm" onPress={selectAllFilteredRoles}>
+                  Selecionar Todos
+                </Button>
+                <Button variant="ghost" size="sm" onPress={deselectAllFilteredRoles}>
+                  Limpar Todos
+                </Button>
+              </View>
+
+              {filteredRoles.length === 0 && (
+                <Text className="text-xs text-muted dark:text-muted-dark text-center my-4">
+                  Nenhuma role encontrada para esta pesquisa.
+                </Text>
+              )}
+
+              <FlatList
+                data={filteredRoles}
+                keyExtractor={(roleItem) => String(roleItem.id)}
+                className="max-h-[260px]"
+                contentContainerStyle={{ paddingBottom: 10 }}
+                initialNumToRender={15}
+                maxToRenderPerBatch={20}
+                windowSize={5}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item: roleItem }) => {
+                  const isChecked = temporaryAllowedRoleIds.includes(roleItem.id);
+                  return (
+                    <TouchableOpacity
+                      className="flex-row items-center py-2.5 border-b border-border dark:border-border-dark"
+                      onPress={() => toggleRoleSelection(roleItem.id)}
+                    >
+                      <Checkbox status={isChecked ? 'checked' : 'unchecked'} color="#ff9800" />
+                      <Text className="flex-1 ml-2 text-sm text-slate-800 dark:text-slate-200">
+                        {roleItem.name || roleItem.id}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </DialogContent>
+
+            <DialogFooter>
+              <Button variant="ghost" size="sm" onPress={() => setSelectedModuleForEdit(null)} disabled={isSavingAccessRules}>
+                Cancelar
+              </Button>
+              <Button variant="default" size="sm" onPress={saveModuleAccessRules} loading={isSavingAccessRules} disabled={isSavingAccessRules}>
+                Guardar
+              </Button>
+            </DialogFooter>
+          </Dialog>
+
+          <Dialog
+            visible={alertFeedbackState.visible}
+            onDismiss={() => setAlertFeedbackState((prev) => ({ ...prev, visible: false }))}
+          >
+            <DialogContent className="items-center text-center pt-2">
+              <View
+                className={`w-16 h-16 rounded-full items-center justify-center mb-3.5 ${
+                  alertFeedbackState.type === 'success' ? 'bg-success/15' : 'bg-destructive/15'
+                }`}
+              >
+                <Icon
+                  source={alertFeedbackState.type === 'success' ? 'check-circle-outline' : 'alert-circle-outline'}
+                  size={38}
+                  color={alertFeedbackState.type === 'success' ? '#2e7d32' : '#d32f2f'}
+                />
+              </View>
+              <Text className="text-lg font-bold text-slate-900 dark:text-white text-center mb-1">
+                {alertFeedbackState.title}
+              </Text>
+              <Text className="text-xs text-muted dark:text-muted-dark text-center leading-relaxed">
+                {alertFeedbackState.message}
+              </Text>
+            </DialogContent>
+            <DialogFooter className="justify-center border-t-0 pt-1">
+              <Button
+                variant={alertFeedbackState.type === 'success' ? 'default' : 'destructive'}
+                size="md"
+                className="w-full"
+                onPress={() => setAlertFeedbackState((prev) => ({ ...prev, visible: false }))}
+              >
+                OK
+              </Button>
+            </DialogFooter>
+          </Dialog>
+        </>
+      }
+    >
+      <Text className="text-lg font-bold mb-1 text-slate-900 dark:text-white">
+        Gestão de Acessos por Role
+      </Text>
+      <Text className="text-xs text-muted dark:text-muted-dark mb-4 leading-relaxed">
+        Escolha que grupos (roles) têm permissão para aceder a cada módulo da aplicação.
+      </Text>
+
+      <SearchInput
+        placeholder="Pesquisar módulo..."
+        value={moduleSearchQuery}
+        onChangeText={setModuleSearchQuery}
+        className="mb-3.5"
       />
 
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text className="text-lg font-bold mb-1 text-slate-900 dark:text-white">
-          Gestão de Acessos por Role
-        </Text>
-        <Text className="text-xs text-muted dark:text-muted-dark mb-4 leading-relaxed">
-          Escolha que grupos (roles) têm permissão para aceder a cada módulo da aplicação.
-        </Text>
-
-        <SearchInput
-          placeholder="Pesquisar módulo..."
-          value={moduleSearchQuery}
-          onChangeText={setModuleSearchQuery}
-          className="mb-3.5"
+      {loading ? (
+        <SkeletonList count={4} />
+      ) : filteredModules.length === 0 ? (
+        <EmptyState
+          icon="view-grid-plus-outline"
+          title="Nenhum módulo encontrado"
+          description="Não existem módulos correspondentes à sua pesquisa."
+          actionLabel={moduleSearchQuery ? 'Limpar Pesquisa' : undefined}
+          onAction={() => setModuleSearchQuery('')}
         />
+      ) : (
+        filteredModules.map((moduleItem, moduleIndex) => {
+          const currentRule = moduleAccessList.find((ruleEntry) => ruleEntry.moduleKey === moduleItem.id);
+          const restrictedRolesDisplay = currentRule
+            ? (currentRule.allowedRoles || []).length
+            : 'Todos';
 
-        {loading ? (
-          <SkeletonList count={4} />
-        ) : filteredModules.length === 0 ? (
-          <EmptyState
-            icon="view-grid-plus-outline"
-            title="Nenhum módulo encontrado"
-            description="Não existem módulos correspondentes à sua pesquisa."
-            actionLabel={moduleSearchQuery ? "Limpar Pesquisa" : undefined}
-            onAction={() => setModuleSearchQuery('')}
-          />
-        ) : (
-          filteredModules.map((moduleItem) => {
-            const dbAccessRule = moduleAccessList.find((rule) => rule.moduleKey === moduleItem.id);
-            const restrictedRolesDisplay = dbAccessRule ? dbAccessRule.allowedRoles.length : 'Todos';
-
-            return (
-              <Card
-                key={moduleItem.id}
-                className="mb-2.5"
-                onPress={() => openModuleAccessModal(moduleItem)}
-              >
-                <CardContent className="flex-row items-center p-3.5">
-                  <View className="w-10 h-10 rounded-xl bg-primary/15 items-center justify-center mr-3">
-                    <Icon source={moduleItem.icon} size={22} color="#f57c00" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-bold text-sm text-slate-900 dark:text-white">
-                      {moduleItem.title}
-                    </Text>
-                    <Text className="text-xs text-muted dark:text-muted-dark mt-0.5">
-                      Acesso:{' '}
-                      <Text className="font-semibold text-primary-dark dark:text-primary-light">
-                        {restrictedRolesDisplay === 'Todos' ? 'Todos (Padrão)' : `${restrictedRolesDisplay} role(s)`}
-                      </Text>
-                    </Text>
-                  </View>
-                  <Icon source="chevron-right" size={20} color="#94a3b8" />
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-      </ScrollView>
-
-      <Dialog visible={!!selectedModuleForEdit} onDismiss={() => !isSavingAccessRules && setSelectedModuleForEdit(null)}>
-        <DialogHeader onClose={() => !isSavingAccessRules && setSelectedModuleForEdit(null)}>
-          <DialogTitle numberOfLines={1}>Acessos: {selectedModuleForEdit?.title}</DialogTitle>
-        </DialogHeader>
-
-        <DialogContent>
-          <Text className="text-xs text-muted dark:text-muted-dark mb-2.5">
-            Selecione as roles autorizadas a aceder a este módulo:
-          </Text>
-
-          <SearchInput
-            placeholder="Pesquisar role..."
-            value={roleSearchQuery}
-            onChangeText={setRoleSearchQuery}
-            className="mb-2.5"
-          />
-
-          <View className="flex-row justify-between mb-2">
-            <Button variant="ghost" size="sm" onPress={selectAllFilteredRoles}>
-              Selecionar Todos
-            </Button>
-            <Button variant="ghost" size="sm" onPress={deselectAllFilteredRoles}>
-              Limpar Todos
-            </Button>
-          </View>
-
-          {filteredRoles.length === 0 && (
-            <Text className="text-xs text-muted dark:text-muted-dark text-center my-4">
-              Nenhuma role encontrada para esta pesquisa.
-            </Text>
-          )}
-
-          <FlatList
-            data={filteredRoles}
-            keyExtractor={(roleItem) => String(roleItem.id)}
-            className="max-h-[260px]"
-            contentContainerStyle={{ paddingBottom: 10 }}
-            initialNumToRender={15}
-            maxToRenderPerBatch={20}
-            windowSize={5}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item: roleItem }) => {
-              const isChecked = temporaryAllowedRoleIds.includes(roleItem.id);
-              return (
-                <TouchableOpacity
-                  className="flex-row items-center py-2.5 border-b border-border dark:border-border-dark"
-                  onPress={() => toggleRoleSelection(roleItem.id)}
-                >
-                  <Checkbox status={isChecked ? 'checked' : 'unchecked'} color="#ff9800" />
-                  <Text className="flex-1 ml-2 text-sm text-slate-800 dark:text-slate-200">
-                    {roleItem.name || roleItem.id}
+          return (
+            <Card
+              key={moduleItem.id ? `module-card-${moduleItem.id}` : `module-idx-${moduleIndex}`}
+              className="mb-3"
+              onPress={() => openModuleAccessModal(moduleItem)}
+            >
+              <CardContent className="flex-row items-center p-4">
+                <View className="w-11 h-11 rounded-2xl bg-primary/15 items-center justify-center mr-3">
+                  <Icon source={moduleItem.icon} size={24} color="#f57c00" />
+                </View>
+                <View className="flex-1 mr-2">
+                  <Text className="font-bold text-sm text-slate-900 dark:text-white">
+                    {moduleItem.title}
                   </Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
-        </DialogContent>
-
-        <DialogFooter>
-          <Button variant="ghost" size="sm" onPress={() => setSelectedModuleForEdit(null)} disabled={isSavingAccessRules}>
-            Cancelar
-          </Button>
-          <Button variant="default" size="sm" onPress={saveModuleAccessRules} loading={isSavingAccessRules} disabled={isSavingAccessRules}>
-            Guardar
-          </Button>
-        </DialogFooter>
-      </Dialog>
-
-      <Dialog
-        visible={alertFeedbackState.visible}
-        onDismiss={() => setAlertFeedbackState((prev) => ({ ...prev, visible: false }))}
-      >
-        <DialogContent className="items-center text-center pt-2">
-          <View
-            className={`w-16 h-16 rounded-full items-center justify-center mb-3.5 ${
-              alertFeedbackState.type === 'success' ? 'bg-success/15' : 'bg-destructive/15'
-            }`}
-          >
-            <Icon
-              source={alertFeedbackState.type === 'success' ? 'check-circle-outline' : 'alert-circle-outline'}
-              size={38}
-              color={alertFeedbackState.type === 'success' ? '#2e7d32' : '#d32f2f'}
-            />
-          </View>
-          <Text className="text-lg font-bold text-slate-900 dark:text-white text-center mb-1">
-            {alertFeedbackState.title}
-          </Text>
-          <Text className="text-xs text-muted dark:text-muted-dark text-center leading-relaxed">
-            {alertFeedbackState.message}
-          </Text>
-        </DialogContent>
-        <DialogFooter className="justify-center border-t-0 pt-1">
-          <Button
-            variant={alertFeedbackState.type === 'success' ? 'default' : 'destructive'}
-            size="md"
-            className="w-full"
-            onPress={() => setAlertFeedbackState((prev) => ({ ...prev, visible: false }))}
-          >
-            OK
-          </Button>
-        </DialogFooter>
-      </Dialog>
-    </View>
+                  <Text className="text-xs text-muted dark:text-muted-dark mt-0.5">
+                    Acesso permitido:{' '}
+                    <Text className="font-semibold text-primary">
+                      {restrictedRolesDisplay === 'Todos' ? 'Todos (Padrão)' : `${restrictedRolesDisplay} role(s)`}
+                    </Text>
+                  </Text>
+                </View>
+                <Icon source="chevron-right" size={20} color="#94a3b8" />
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
+    </ScreenContainer>
   );
 }
-

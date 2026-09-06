@@ -15,6 +15,8 @@ export function ScreenContainer({
   scrollable = true,
   className = '',
   contentContainerClassName = '',
+  contentContainerStyle,
+  extra,
   bgClassName = 'bg-primary',
   ...props
 }) {
@@ -37,7 +39,7 @@ export function ScreenContainer({
       {scrollable ? (
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
+          contentContainerStyle={[{ padding: 16, paddingBottom: 110 }, contentContainerStyle]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             onRefresh ? (
@@ -53,10 +55,12 @@ export function ScreenContainer({
           {children}
         </ScrollView>
       ) : (
-        <View className={`flex-1 p-4 pb-[110px] ${contentContainerClassName}`}>
+        <View className={`flex-1 p-4 pb-[110px] ${contentContainerClassName}`} style={contentContainerStyle}>
           {children}
         </View>
       )}
+
+      {extra}
     </View>
   );
 }
