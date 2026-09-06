@@ -80,8 +80,11 @@ export function DtpArtifactsBaseView({
       const loadedCoursesList = Array.isArray(rawResultData) ? rawResultData : [];
       setCoursesWithAlertsList(loadedCoursesList);
 
-      if (loadedCoursesList.length > 0 && loadedCoursesList[0].entity?.code) {
-        setExpandedCourseCodesMap({ [loadedCoursesList[0].entity.code]: true });
+      const firstCourseWithAlerts = loadedCoursesList.find((c) =>
+        (c.alerts || []).some((a) => Array.isArray(a.entities) && a.entities.length > 0)
+      );
+      if (firstCourseWithAlerts?.entity?.code) {
+        setExpandedCourseCodesMap({ [firstCourseWithAlerts.entity.code]: true });
       }
     } catch (err) {
       console.error('Erro ao carregar alertas DTP:', err.message);
@@ -147,7 +150,7 @@ export function DtpArtifactsBaseView({
               );
             });
 
-            if (matchingEntities.length === 0 && searchFilterQuery.trim() !== '') {
+            if (matchingEntities.length === 0) {
               return null;
             }
 
@@ -168,6 +171,10 @@ export function DtpArtifactsBaseView({
           0
         );
 
+        if (totalFilteredAlertsCount === 0) {
+          return null;
+        }
+
         return {
           ...courseEntry,
           alerts: matchingAlerts,
@@ -176,6 +183,13 @@ export function DtpArtifactsBaseView({
       })
       .filter(Boolean);
   }, [coursesWithAlertsList, selectedCourseFilter, selectedCategoryFilter, searchFilterQuery]);
+
+  const coursesHavingAlerts = useMemo(() => {
+    return coursesWithAlertsList.filter((courseEntry) => {
+      const alerts = courseEntry.alerts || [];
+      return alerts.some((a) => Array.isArray(a.entities) && a.entities.length > 0);
+    });
+  }, [coursesWithAlertsList]);
 
   const totalFilteredAlertsCount = useMemo(() => {
     return filteredCoursesWithAlerts.reduce((sum, courseEntry) => sum + (courseEntry.totalFilteredAlerts || 0), 0);
@@ -253,10 +267,10 @@ export function DtpArtifactsBaseView({
             ))}
           </View>
 
-          {coursesWithAlertsList.length > 0 && (
+          {coursesHavingAlerts.length > 0 && (
             <>
               <Text className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                Filtrar por Curso ({coursesWithAlertsList.length})
+                Filtrar por Curso ({coursesHavingAlerts.length})
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                 <Badge
@@ -267,7 +281,7 @@ export function DtpArtifactsBaseView({
                 >
                   Todos os Cursos
                 </Badge>
-                {coursesWithAlertsList.map((courseEntry, courseIdx) => {
+                {coursesHavingAlerts.map((courseEntry, courseIdx) => {
                   const courseEntity = courseEntry.entity || {};
                   const isCourseSelected = selectedCourseFilter === courseEntity.code;
                   return (

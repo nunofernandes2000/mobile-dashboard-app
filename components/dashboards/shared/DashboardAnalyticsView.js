@@ -23,7 +23,6 @@ export default function DashboardAnalyticsView({
 
   // Estatísticas de alertas DTP
   if (type === 'dtp') {
-    const totalAffectedCoursesCount = analyticsDataList.length;
     let totalAlertsCount = 0;
     const categoryAlertCountsMap = {};
     const courseAlertStatsList = [];
@@ -49,6 +48,8 @@ export default function DashboardAnalyticsView({
         });
       }
     });
+
+    const totalAffectedCoursesCount = courseAlertStatsList.length;
 
     courseAlertStatsList.sort((statA, statB) => statB.count - statA.count);
     const topIrregularCourses = courseAlertStatsList.slice(0, 7);
