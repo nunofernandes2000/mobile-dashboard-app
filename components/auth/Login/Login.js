@@ -64,7 +64,7 @@ export default function Login({ onLogin: handleInitiateLogin }) {
 
         <View className="items-center gap-2.5">
           <Text className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
-            Politécnico de Portalegre
+            Universidade Politécnica
           </Text>
           <View className="flex-row flex-wrap justify-center gap-2">
             {['ESTGD', 'ESECS', 'ESS', 'ESAE'].map((schoolAcronym) => (
