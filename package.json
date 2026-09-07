@@ -10,6 +10,8 @@
     "start:testrc": "EXPO_PUBLIC_ENV=testrc expo start",
     "start:nunolaptop": "EXPO_PUBLIC_ENV=nunolaptop expo start",
     "start:prod": "EXPO_PUBLIC_ENV=prod expo start",
+    "build:apk": "eas build -p android --profile preview",
+    "build:apk:local": "eas build -p android --profile preview --local",
     "android": "bash ./start-android.sh",
     "android:legacy": "(adb wait-for-device && adb reverse tcp:3000 tcp:3000 &) && expo start --android",
     "fix": "adb reverse tcp:3000 tcp:3000 && adb reverse tcp:8081 tcp:8081 && echo 'Tuneis restaurados!'",

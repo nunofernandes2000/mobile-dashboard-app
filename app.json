@@ -45,6 +45,12 @@
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5b9d0e0a-5f8f-4827-9dd8-3b9ebdaae217"
+      }
+    },
+    "owner": "necas_2000"
   }
 }
