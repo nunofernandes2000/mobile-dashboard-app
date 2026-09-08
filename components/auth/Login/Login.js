@@ -1,10 +1,25 @@
 import React from 'react';
-import { View, Image, Text } from 'react-native';
+import { View, Image, Text, Alert } from 'react-native';
 import { Icon } from 'react-native-paper';
 import { Button, Badge } from '../../ui';
 
 // Ecrã de login institucional do Politécnico de Portalegre
 export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
+  // DEMO_TOKEN só esta aqui para apresentação da universidade
+  const handlePressDemo = () => {
+    Alert.alert(
+      'Modo Demonstração',
+      'Pretende aceder ao modo de demonstração com dados simulados para apresentação institucional?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Entrar',
+          onPress: onDemoLogin,
+        },
+      ]
+    );
+  };
+
   return (
     <View className="gap-4 w-full max-w-[460px] self-center py-2.5">
       <View className="items-center pt-1.5 pb-1">
@@ -54,7 +69,7 @@ export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
             variant="secondary"
             size="lg"
             icon="presentation"
-            onPress={onDemoLogin}
+            onPress={handlePressDemo}
             className="border border-primary/30"
           >
             Entrar em Modo Demonstração (Júri)
@@ -65,11 +80,11 @@ export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
           <View className="flex-row items-center gap-1.5">
             <Icon source="information-outline" size={18} color="#f57c00" />
             <Text className="font-semibold text-xs text-slate-900">
-              Acesso Institucional & Demonstração
+              Acesso Institucional
             </Text>
           </View>
           <Text className="text-xs leading-5 text-slate-600">
-            Utilize a conta institucional para dados reais do PAE ou o Modo Demonstração para avaliação com as 4 UCs simuladas de Engenharia Informática.
+            Utilize o seu endereço de email institucional (@ipportalegre.pt) e a respetiva palavra-passe da rede académica.
           </Text>
         </View>
 
