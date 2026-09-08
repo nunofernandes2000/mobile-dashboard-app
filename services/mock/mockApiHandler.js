@@ -109,8 +109,10 @@ export async function handleMockRequest(url, options = {}) {
   } else if (pathname.endsWith('/filerequests')) {
     responseData = {
       success: true,
+      result: simulatedFileRequests,
       fileRequests: simulatedFileRequests,
       simulated: true,
+      count: simulatedFileRequests.length,
     };
   } else if (pathname.endsWith('/files/upload')) {
     responseData = {
