@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Platform, View, ScrollView, StatusBar, Text, Image } from 'react-native';
-import { PaperProvider, ActivityIndicator, Banner } from 'react-native-paper';
+import { PaperProvider, ActivityIndicator, Banner, Icon } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { InstitutionalHeader, Login, AuthWebView } from './components';
@@ -8,6 +8,11 @@ import Config from './config';
 import { usePreferences } from './hooks/usePreferences';
 import { useAuth } from './hooks/useAuth';
 import AppNavigator from './navigation/AppNavigator';
+import { setupMockInterceptor } from './services/mock/mockInterceptor';
+
+// Ativa o intercetor de rede para pedidos da sessão de demonstração
+//isto só esta aqui para apresentaç
+setupMockInterceptor();
 
 const BFF_HOST = Config?.API_URL || 'http://localhost:3000';
 console.log(`[APP CONFIG] Loaded ENV: '${Config?.ENV}' | BFF_HOST: '${BFF_HOST}'`);
@@ -77,8 +82,11 @@ export default function App() {
           />
 
           {auth.isTestMode && (
-            <View className="bg-destructive py-1 px-3 items-center justify-center">
-              <Text className="text-white font-bold text-xs">MODO DE TESTE ATIVADO (DADOS MOCK)</Text>
+            <View className="bg-amber-600 py-1.5 px-3 items-center justify-center flex-row gap-1.5">
+              <Icon source="presentation" size={14} color="#ffffff" />
+              <Text className="text-white font-bold text-xs tracking-wide">
+                MODO DEMONSTRAÇÃO (DADOS SIMULADOS)
+              </Text>
             </View>
           )}
 
@@ -124,7 +132,10 @@ export default function App() {
               )}
 
               {!auth.isLoading && (!auth.accessToken || !auth.userProfile) && (
-                <Login onLogin={auth.handleLogin} />
+                <Login
+                  onLogin={auth.handleLogin}
+                  onDemoLogin={auth.handleDemoLogin}
+                />
               )}
             </ScrollView>
           )}

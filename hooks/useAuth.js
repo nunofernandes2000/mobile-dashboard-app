@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Alert } from 'react-native';
 import * as Linking from 'expo-linking';
 import { tokenStorage, SECURE_KEY_TOKEN } from '../utils/storage';
+import { DEMO_TOKEN } from '../services/mock/mockInterceptor';
 
 export function useAuth({ bffHost, onPreferencesLoaded, onSessionExpired, onLogout }) {
   const [accessToken, setAccessToken] = useState(null);
@@ -226,6 +227,14 @@ export function useAuth({ bffHost, onPreferencesLoaded, onSessionExpired, onLogo
     [persistAccessToken]
   );
 
+  // Inicia sessão direta em modo de demonstração/simulação para o Júri
+  const handleDemoLogin = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    setAccessToken(DEMO_TOKEN);
+    await fetchUserProfileAndSettings(DEMO_TOKEN);
+  }, [fetchUserProfileAndSettings]);
+
   // Termina a sessão com diálogo de confirmação
   const handleLogout = useCallback(() => {
     const performLogout = async () => {
@@ -269,6 +278,7 @@ export function useAuth({ bffHost, onPreferencesLoaded, onSessionExpired, onLogo
     setUserProfile,
     hasAccessToModule,
     handleLogin,
+    handleDemoLogin,
     handleWebViewNavigation,
     handleLogout,
     persistAccessToken,

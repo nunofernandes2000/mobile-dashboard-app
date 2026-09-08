@@ -4,7 +4,7 @@ import { Icon } from 'react-native-paper';
 import { Button, Badge } from '../../ui';
 
 // Ecrã de login institucional do Politécnico de Portalegre
-export default function Login({ onLogin: handleInitiateLogin }) {
+export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
   return (
     <View className="gap-4 w-full max-w-[460px] self-center py-2.5">
       <View className="items-center pt-1.5 pb-1">
@@ -48,15 +48,27 @@ export default function Login({ onLogin: handleInitiateLogin }) {
           Entrar com Conta UPP / IPP
         </Button>
 
+        {onDemoLogin && (
+          <Button
+            variant="secondary"
+            size="lg"
+            icon="presentation"
+            onPress={onDemoLogin}
+            className="border border-primary/30"
+          >
+            Entrar em Modo Demonstração (Júri)
+          </Button>
+        )}
+
         <View className="mt-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 border-l-4 border-l-primary gap-1.5">
           <View className="flex-row items-center gap-1.5">
             <Icon source="information-outline" size={18} color="#f57c00" />
             <Text className="font-semibold text-xs text-slate-900">
-              Acesso Institucional
+              Acesso Institucional & Demonstração
             </Text>
           </View>
           <Text className="text-xs leading-5 text-slate-600">
-            Utilize o seu endereço de email institucional (@ipportalegre.pt) e a respetiva palavra-passe da rede académica.
+            Utilize a conta institucional para dados reais do PAE ou o Modo Demonstração para avaliação com as 4 UCs simuladas de Engenharia Informática.
           </Text>
         </View>
 
