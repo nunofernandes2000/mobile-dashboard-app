@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Icon, ProgressBar } from 'react-native-paper';
+import { Icon, ProgressBar, ActivityIndicator } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { formatDatePt as formatDate } from '../../../utils/formatters';
@@ -49,6 +49,7 @@ export default function Upload({ token, bffHost, onBack }) {
   const [fulfillingRequestUuid, setFulfillingRequestUuid] = useState(null);
 
   const [isMediaSourcePickerVisible, setIsMediaSourcePickerVisible] = useState(false);
+  const [activePickerSourceId, setActivePickerSourceId] = useState(null);
   const [selectedFileRequestItem, setSelectedFileRequestItem] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStepLabel, setUploadStepLabel] = useState('');
@@ -59,14 +60,17 @@ export default function Upload({ token, bffHost, onBack }) {
     message: '',
   });
 
-  // Atualiza a lista a cada 5 segundos para detetar novos pedidos da web
+  // Atualiza a lista periodicamente para detetar novos pedidos da web
   useEffect(() => {
     fetchPendingFileRequests();
     const pollingInterval = setInterval(() => {
-      fetchPendingFileRequests(true);
-    }, 5000);
+      // Não faz polling se o utilizador estiver a interagir com o modal ou a enviar ficheiro
+      if (!isMediaSourcePickerVisible && !fulfillingRequestUuid) {
+        fetchPendingFileRequests(true);
+      }
+    }, 8000);
     return () => clearInterval(pollingInterval);
-  }, []);
+  }, [isMediaSourcePickerVisible, fulfillingRequestUuid]);
 
   const fetchPendingFileRequests = async (isSilent = false) => {
     if (!isSilent) setIsLoadingRequests(true);
@@ -95,115 +99,155 @@ export default function Upload({ token, bffHost, onBack }) {
 
   const pickMedia = async (sourceType) => {
     if (sourceType === 'camera') {
-      const { granted } = await ImagePicker.requestCameraPermissionsAsync();
-      if (!granted) throw new Error('Permissão de acesso à câmara recusada.');
-      const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
-      if (result.canceled || !result.assets?.[0]) return null;
-      const asset = result.assets[0];
-      return {
-        uri: asset.uri,
-        name: asset.fileName || `foto_camera_${Date.now()}.jpg`,
-        type: asset.mimeType || 'image/jpeg',
-      };
+      try {
+        const perms = await ImagePicker.getCameraPermissionsAsync();
+        if (!perms.granted) {
+          const requested = await ImagePicker.requestCameraPermissionsAsync();
+          if (!requested.granted) throw new Error('Permissão de acesso à câmara recusada.');
+        }
+        const result = await ImagePicker.launchCameraAsync({
+          quality: 0.85,
+          allowsEditing: false,
+        });
+        if (result.canceled || !result.assets?.[0]) return null;
+        const asset = result.assets[0];
+        return {
+          uri: asset.uri,
+          name: asset.fileName || `foto_camera_${Date.now()}.jpg`,
+          type: asset.mimeType || 'image/jpeg',
+        };
+      } catch (e) {
+        if (e.message?.includes('recusada')) throw e;
+        console.warn('Erro ao abrir câmara:', e.message);
+        throw new Error('Não foi possível iniciar a câmara.');
+      }
     }
 
     if (sourceType === 'gallery') {
-      const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!granted) throw new Error('Permissão de acesso à galeria recusada.');
-      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.85 });
-      if (result.canceled || !result.assets?.[0]) return null;
-      const asset = result.assets[0];
-      return {
-        uri: asset.uri,
-        name: asset.fileName || `foto_galeria_${Date.now()}.jpg`,
-        type: asset.mimeType || 'image/jpeg',
-      };
+      try {
+        const perms = await ImagePicker.getMediaLibraryPermissionsAsync();
+        if (!perms.granted && perms.canAskAgain) {
+          const requested = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!requested.granted) throw new Error('Permissão de acesso à galeria recusada.');
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          quality: 0.85,
+          allowsEditing: false,
+        });
+        if (result.canceled || !result.assets?.[0]) return null;
+        const asset = result.assets[0];
+        return {
+          uri: asset.uri,
+          name: asset.fileName || `foto_galeria_${Date.now()}.jpg`,
+          type: asset.mimeType || 'image/jpeg',
+        };
+      } catch (e) {
+        if (e.message?.includes('recusada')) throw e;
+        console.warn('Erro ao abrir galeria:', e.message);
+        throw new Error('Não foi possível aceder à galeria de fotos.');
+      }
     }
 
     if (sourceType === 'file') {
-      const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
-      if (result.canceled || !result.assets?.[0]) return null;
-      const asset = result.assets[0];
-      return {
-        uri: asset.uri,
-        name: asset.name || `documento_${Date.now()}`,
-        type: asset.mimeType || 'application/octet-stream',
-      };
+      try {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: '*/*',
+          copyToCacheDirectory: true,
+        });
+        if (result.canceled || !result.assets?.[0]) return null;
+        const asset = result.assets[0];
+        return {
+          uri: asset.uri,
+          name: asset.name || `documento_${Date.now()}`,
+          type: asset.mimeType || 'application/octet-stream',
+        };
+      } catch (e) {
+        console.warn('Erro ao abrir explorador de ficheiros:', e.message);
+        throw new Error('Não foi possível aceder ao explorador de ficheiros.');
+      }
     }
     return null;
   };
 
-  const handleFulfillRequest = async (sourceType) => {
+  const handleFulfillRequest = (sourceType) => {
     const requestItem = selectedFileRequestItem;
-    setIsMediaSourcePickerVisible(false);
     if (!requestItem) return;
 
-    try {
-      const file = await pickMedia(sourceType);
-      if (!file) return;
+    setActivePickerSourceId(sourceType);
+    setIsMediaSourcePickerVisible(false);
 
-      setFulfillingRequestUuid(requestItem.uuid);
-      setUploadProgress(0.35);
-      setUploadStepLabel('A enviar ficheiro para o servidor PAE...');
+    // Permite que o modal termine a animação de fecho antes de abrir o seletor nativo do sistema
+    setTimeout(async () => {
+      try {
+        const file = await pickMedia(sourceType);
+        setActivePickerSourceId(null);
+        if (!file) return;
 
-      // Envia o ficheiro selecionado para o servidor com name="file" (pág. 45-46 do PDF)
-      const formData = new FormData();
-      formData.append('file', file);
+        setFulfillingRequestUuid(requestItem.uuid);
+        setUploadProgress(0.35);
+        setUploadStepLabel('A enviar ficheiro para o servidor PAE...');
 
-      const uploadRes = await fetch(`${bffHost}/files/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
+        // Envia o ficheiro selecionado para o servidor com name="file" (pág. 45-46 do PDF)
+        const formData = new FormData();
+        formData.append('file', file);
 
-      if (!uploadRes.ok) throw new Error(`Falha no upload do ficheiro (${uploadRes.status})`);
-      const uploadData = await uploadRes.json();
-      const fileUploaded = uploadData.uploadedFiles?.[0] || uploadData.fileUploaded;
+        const uploadRes = await fetch(`${bffHost}/files/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
 
-      if (!fileUploaded) {
-        throw new Error('Servidor não retornou dados válidos do ficheiro.');
+        if (!uploadRes.ok) throw new Error(`Falha no upload do ficheiro (${uploadRes.status})`);
+        const uploadData = await uploadRes.json();
+        const fileUploaded = uploadData.uploadedFiles?.[0] || uploadData.fileUploaded;
+
+        if (!fileUploaded) {
+          throw new Error('Servidor não retornou dados válidos do ficheiro.');
+        }
+
+        setUploadProgress(0.75);
+        setUploadStepLabel('A associar documento ao pedido no PAE...');
+
+        // Associa o ficheiro carregado ao pedido requisitado
+        const fulfillRes = await fetch(`${bffHost}/filerequests/fulfill`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ uuid: requestItem.uuid, fileUploaded }),
+        });
+
+        if (!fulfillRes.ok) throw new Error(`Falha ao associar pedido (${fulfillRes.status})`);
+
+        setUploadProgress(1.0);
+        setUploadStepLabel('Concluído com sucesso!');
+
+        setFeedbackAlert({
+          visible: true,
+          type: 'success',
+          title: 'Ficheiro Enviado com Sucesso!',
+          message: `O documento foi associado ao pedido "${requestItem.description}" e já se encontra disponível no PAE.`,
+        });
+        setPendingFileRequests((prev) => prev.filter((item) => item.uuid !== requestItem.uuid));
+        fetchPendingFileRequests(true);
+      } catch (err) {
+        console.error('Erro ao responder ao pedido:', err);
+        setFeedbackAlert({
+          visible: true,
+          type: 'error',
+          title: 'Falha no Envio',
+          message: err.message || 'Não foi possível associar o ficheiro ao pedido no PAE. Por favor, tente novamente.',
+        });
+      } finally {
+        setActivePickerSourceId(null);
+        setFulfillingRequestUuid(null);
+        setSelectedFileRequestItem(null);
+        setUploadProgress(0);
+        setUploadStepLabel('');
       }
-
-      setUploadProgress(0.75);
-      setUploadStepLabel('A associar documento ao pedido no PAE...');
-
-      // Associa o ficheiro carregado ao pedido requisitado
-      const fulfillRes = await fetch(`${bffHost}/filerequests/fulfill`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ uuid: requestItem.uuid, fileUploaded }),
-      });
-
-      if (!fulfillRes.ok) throw new Error(`Falha ao associar pedido (${fulfillRes.status})`);
-
-      setUploadProgress(1.0);
-      setUploadStepLabel('Concluído com sucesso!');
-
-      setFeedbackAlert({
-        visible: true,
-        type: 'success',
-        title: 'Ficheiro Enviado com Sucesso!',
-        message: `O documento foi associado ao pedido "${requestItem.description}" e já se encontra disponível no PAE.`,
-      });
-      setPendingFileRequests((prev) => prev.filter((item) => item.uuid !== requestItem.uuid));
-      fetchPendingFileRequests(true);
-    } catch (err) {
-      console.error('Erro ao responder ao pedido:', err);
-      setFeedbackAlert({
-        visible: true,
-        type: 'error',
-        title: 'Falha no Envio',
-        message: err.message || 'Não foi possível associar o ficheiro ao pedido no PAE. Por favor, tente novamente.',
-      });
-    } finally {
-      setFulfillingRequestUuid(null);
-      setSelectedFileRequestItem(null);
-      setUploadProgress(0);
-      setUploadStepLabel('');
-    }
+    }, 120);
   };
 
   return (
@@ -228,26 +272,38 @@ export default function Upload({ token, bffHost, onBack }) {
                 </Text>
               )}
 
-              {MEDIA_SOURCES.map((source) => (
-                <TouchableOpacity
-                  key={source.id}
-                  onPress={() => handleFulfillRequest(source.id)}
-                  activeOpacity={0.7}
-                  className="flex-row items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800 mb-2"
-                >
-                  <View className="w-10 h-10 rounded-xl bg-primary/15 items-center justify-center mr-3">
-                    <Icon source={source.icon} size={22} color="#f57c00" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-bold text-sm text-slate-900 dark:text-white">
-                      {source.title}
-                    </Text>
-                    <Text className="text-xs text-muted dark:text-muted-dark mt-0.5">
-                      {source.description}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {MEDIA_SOURCES.map((source) => {
+                const isSelected = activePickerSourceId === source.id;
+                return (
+                  <TouchableOpacity
+                    key={source.id}
+                    onPress={() => handleFulfillRequest(source.id)}
+                    activeOpacity={0.7}
+                    disabled={!!activePickerSourceId}
+                    className={`flex-row items-center p-3 rounded-xl mb-2 ${
+                      isSelected
+                        ? 'bg-primary/20 dark:bg-primary/25 border border-primary'
+                        : 'bg-slate-50 dark:bg-slate-800'
+                    }`}
+                  >
+                    <View className="w-10 h-10 rounded-xl bg-primary/15 items-center justify-center mr-3">
+                      {isSelected ? (
+                        <ActivityIndicator size={20} color="#ff9800" />
+                      ) : (
+                        <Icon source={source.icon} size={22} color="#f57c00" />
+                      )}
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-bold text-sm text-slate-900 dark:text-white">
+                        {source.title}
+                      </Text>
+                      <Text className="text-xs text-muted dark:text-muted-dark mt-0.5">
+                        {source.description}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </DialogContent>
             <DialogFooter>
               <Button variant="ghost" size="sm" onPress={() => setIsMediaSourcePickerVisible(false)}>
