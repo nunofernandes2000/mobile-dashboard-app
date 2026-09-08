@@ -17,6 +17,13 @@ import {
 import { SIMULATED_ROOMS } from './simulatedRooms';
 import { extractUserUcs } from './ucsHelper';
 
+// Registo em memória de pedidos cumpridos durante a sessão de teste
+const demoFulfilledUuids = new Set();
+
+export function resetDemoFulfilledRequests() {
+  demoFulfilledUuids.clear();
+}
+
 export async function handleMockRequest(url, options = {}) {
   // Simulação de latência de rede realista (100ms)
   await new Promise((resolve) => setTimeout(resolve, 100));
@@ -107,22 +114,49 @@ export async function handleMockRequest(url, options = {}) {
       isMock: true,
     };
   } else if (pathname.endsWith('/filerequests')) {
+    const activeRequests = simulatedFileRequests.filter(
+      (item) => !demoFulfilledUuids.has(item.uuid)
+    );
     responseData = {
       success: true,
-      result: simulatedFileRequests,
-      fileRequests: simulatedFileRequests,
+      result: activeRequests,
+      fileRequests: activeRequests,
       simulated: true,
-      count: simulatedFileRequests.length,
+      count: activeRequests.length,
     };
-  } else if (pathname.endsWith('/files/upload')) {
+  } else if (pathname.endsWith('/files/upload') || pathname.endsWith('/upload')) {
+    const mockUploadedFile = {
+      contentType: 'image/jpeg',
+      extension: 'jpg',
+      fileName: 'documento_submetido.jpg',
+      fileSize: 145230,
+      md5: 'd41d8cd98f00b204e9800998ecf8427e',
+      tmpName: `simulated_tmp_${Date.now()}`,
+    };
     responseData = {
       success: true,
-      message: 'Ficheiro simulado enviado com sucesso.',
+      service: 'ok',
+      uploadedFiles: [mockUploadedFile],
+      fileUploaded: mockUploadedFile,
+      simulated: true,
     };
   } else if (pathname.endsWith('/filerequests/fulfill')) {
+    try {
+      if (options.body) {
+        const bodyObj = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
+        if (bodyObj?.uuid) {
+          demoFulfilledUuids.add(bodyObj.uuid);
+        }
+      }
+    } catch (e) {
+      // Ignora erro de parsing no mock
+    }
+
     responseData = {
       success: true,
+      service: 'ok',
       message: 'Pedido de ficheiro cumprido com sucesso.',
+      simulated: true,
     };
   } else if (pathname.endsWith('/tickets')) {
     responseData = { success: true, result: simulatedTickets, simulated: true };

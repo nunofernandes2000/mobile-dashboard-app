@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Alert } from 'react-native';
 import * as Linking from 'expo-linking';
 import { tokenStorage, SECURE_KEY_TOKEN } from '../utils/storage';
+import { resetDemoFulfilledRequests } from '../services/mock/mockApiHandler';
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 import { DEMO_TOKEN } from '../services/mock/mockInterceptor';
 
 export function useAuth({ bffHost, onPreferencesLoaded, onSessionExpired, onLogout }) {
@@ -244,6 +246,7 @@ export function useAuth({ bffHost, onPreferencesLoaded, onSessionExpired, onLogo
       setModuleAccess([]);
       setIsTestMode(false);
       setErrorMessage(null);
+      resetDemoFulfilledRequests();
       callbacksRef.current.onLogout?.();
       try {
         await tokenStorage.deleteItem(SECURE_KEY_TOKEN);
