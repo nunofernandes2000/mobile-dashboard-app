@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { View } from 'react-native';
 import { useRooms } from '../useRooms';
 import { matchesSchool } from '../roomsConstants';
@@ -6,7 +6,7 @@ import { SchoolPicker } from '../SchoolPicker';
 import RoomSchedule from '../RoomSchedule';
 import { SkeletonList, ErrorCard, Header } from '../../ui';
 
-export default function Rooms({ token, onBack, bffHost, profile }) {
+function Rooms({ token, onBack, bffHost, profile }) {
   const {
     rooms,
     selectedSchool,
@@ -69,3 +69,5 @@ export default function Rooms({ token, onBack, bffHost, profile }) {
     </View>
   );
 }
+
+export default memo(Rooms);

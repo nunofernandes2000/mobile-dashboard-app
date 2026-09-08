@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, TouchableOpacity, Text, Alert } from 'react-native';
 import { Banner, Checkbox, Modal, Portal, Icon } from 'react-native-paper';
 
 import {
@@ -23,7 +23,7 @@ export const ALL_NAV_ITEMS = [
   { view: 'profile', label: 'Perfil', icon: 'account' },
 ];
 
-export default function AppNavigator({
+function AppNavigator({
   currentView,
   setCurrentView,
   dashboardInitialModule,
@@ -48,28 +48,63 @@ export default function AppNavigator({
   const [showNavConfigModal, setShowNavConfigModal] = useState(false);
   const [tempNavKeys, setTempNavKeys] = useState(activeNavKeys);
 
-  const handleOpenNavConfig = () => {
+  // Callbacks de navegação estáveis para evitar re-renderização dos ecrãs filhos
+  const handleNavigateHome = useCallback(() => {
+    setCurrentView('home');
+  }, [setCurrentView]);
+
+  const handleNavigateProfile = useCallback(() => {
+    setCurrentView('profile');
+  }, [setCurrentView]);
+
+  const handleHomeNavigate = useCallback((targetAction, targetModule) => {
+    if (targetAction === 'dashboard') {
+      setDashboardInitialModule(targetModule || null);
+      setCurrentView('dashboard');
+    } else {
+      setCurrentView(targetAction);
+    }
+  }, [setDashboardInitialModule, setCurrentView]);
+
+  const handleBackFromDashboard = useCallback(() => {
+    setDashboardInitialModule(null);
+    setCurrentView('home');
+  }, [setDashboardInitialModule, setCurrentView]);
+
+  const handleNavItemPress = useCallback((viewKey) => {
+    setDashboardInitialModule?.(null);
+    setCurrentView(viewKey);
+  }, [setDashboardInitialModule, setCurrentView]);
+
+  const handleAdminPress = useCallback(() => {
+    setDashboardInitialModule?.(null);
+    setCurrentView('admin');
+  }, [setDashboardInitialModule, setCurrentView]);
+
+  const handleOpenNavConfig = useCallback(() => {
     setTempNavKeys(activeNavKeys);
     setShowNavConfigModal(true);
-  };
+  }, [activeNavKeys]);
 
-  const handleToggleTempItem = (key) => {
-    if (tempNavKeys.includes(key)) {
-      if (tempNavKeys.length <= 2) {
-        Alert.alert('Atenção', 'Mantenha pelo menos 2 atalhos selecionados.');
-        return;
+  const handleToggleTempItem = useCallback((key) => {
+    setTempNavKeys((prev) => {
+      if (prev.includes(key)) {
+        if (prev.length <= 2) {
+          Alert.alert('Atenção', 'Mantenha pelo menos 2 atalhos selecionados.');
+          return prev;
+        }
+        return prev.filter((k) => k !== key);
+      } else {
+        if (prev.length >= 5) {
+          Alert.alert('Limite Atingido', 'Pode ter no máximo 5 atalhos ativos na barra inferior.');
+          return prev;
+        }
+        return [...prev, key];
       }
-      setTempNavKeys(tempNavKeys.filter((k) => k !== key));
-    } else {
-      if (tempNavKeys.length >= 5) {
-        Alert.alert('Limite Atingido', 'Pode ter no máximo 5 atalhos ativos na barra inferior.');
-        return;
-      }
-      setTempNavKeys([...tempNavKeys, key]);
-    }
-  };
+    });
+  }, []);
 
-  const handleSaveNavConfig = () => {
+  const handleSaveNavConfig = useCallback(() => {
     if (onSaveNavTabs) {
       onSaveNavTabs(tempNavKeys);
     } else if (onToggleNavItem) {
@@ -81,7 +116,12 @@ export default function AppNavigator({
       });
     }
     setShowNavConfigModal(false);
-  };
+  }, [onSaveNavTabs, onToggleNavItem, tempNavKeys, activeNavKeys]);
+
+  // Filtra atalhos visíveis apenas quando as preferências ou permissões mudam
+  const visibleNavItems = useMemo(() => {
+    return ALL_NAV_ITEMS.filter((item) => activeNavKeys.includes(item.view) && (hasAccessToModule ? hasAccessToModule(item.view) : true));
+  }, [activeNavKeys, hasAccessToModule]);
 
   return (
     <>
@@ -101,22 +141,15 @@ export default function AppNavigator({
           pinnedServices={pinnedServices}
           onReorderPinnedServices={onReorderPinnedServices}
           hasAccessToModule={hasAccessToModule}
-          onNavigate={(targetAction, targetModule) => {
-            if (targetAction === 'dashboard') {
-              setDashboardInitialModule(targetModule || null);
-              setCurrentView('dashboard');
-            } else {
-              setCurrentView(targetAction);
-            }
-          }}
-          onNavigateToProfile={() => setCurrentView('profile')}
+          onNavigate={handleHomeNavigate}
+          onNavigateToProfile={handleNavigateProfile}
         />
       ) : currentView === 'rooms' ? (
         <Rooms
           token={accessToken}
           bffHost={bffHost}
           profile={userProfile}
-          onBack={() => setCurrentView('home')}
+          onBack={handleNavigateHome}
         />
       ) : currentView === 'dashboard' ? (
         <Dashboard
@@ -125,34 +158,31 @@ export default function AppNavigator({
           initialModule={dashboardInitialModule}
           pinnedServices={pinnedServices}
           onTogglePin={onTogglePin}
-          onBack={() => {
-            setDashboardInitialModule(null);
-            setCurrentView('home');
-          }}
+          onBack={handleBackFromDashboard}
         />
       ) : currentView === 'upload' ? (
         <Upload
           token={accessToken}
           bffHost={bffHost}
-          onBack={() => setCurrentView('home')}
+          onBack={handleNavigateHome}
         />
       ) : currentView === 'calendar' ? (
         <CalendarEventsDashboard
           token={accessToken}
           bffHost={bffHost}
-          onBack={() => setCurrentView('home')}
+          onBack={handleNavigateHome}
         />
       ) : currentView === 'announcements' ? (
         <AnnouncementsDashboard
           token={accessToken}
           bffHost={bffHost}
-          onBack={() => setCurrentView('home')}
+          onBack={handleNavigateHome}
         />
       ) : currentView === 'admin' ? (
         <AdminPanel
           token={accessToken}
           bffHost={bffHost}
-          onBack={() => setCurrentView('home')}
+          onBack={handleNavigateHome}
         />
       ) : (
         <Profile
@@ -160,14 +190,13 @@ export default function AppNavigator({
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
           onLogout={onLogout}
-          onBack={() => setCurrentView('home')}
+          onBack={handleNavigateHome}
         />
       )}
 
-
       {/* Barra de Navegação Inferior Flutuante */}
       <View className="absolute bottom-[20px] left-3 right-3 h-[70px] rounded-3xl flex-row items-center justify-around px-2 shadow-lg bg-surface dark:bg-surface-dark border border-border dark:border-border-dark">
-        {ALL_NAV_ITEMS.filter((item) => activeNavKeys.includes(item.view) && hasAccessToModule(item.view)).map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive = currentView === item.view;
           const activeColor = '#ff9800';
           const inactiveColor = isDarkMode ? '#94a3b8' : '#64748b';
@@ -176,10 +205,7 @@ export default function AppNavigator({
             <TouchableOpacity
               key={item.view}
               className="flex-1 h-[56px] items-center justify-center py-1 px-0.5 relative"
-              onPress={() => {
-                setDashboardInitialModule?.(null);
-                setCurrentView(item.view);
-              }}
+              onPress={() => handleNavItemPress(item.view)}
               onLongPress={() => setShowNavConfigModal(true)}
               activeOpacity={0.7}
             >
@@ -208,10 +234,7 @@ export default function AppNavigator({
         {isAdmin && (
           <TouchableOpacity
             className="flex-1 h-[56px] items-center justify-center py-1 px-0.5 relative"
-            onPress={() => {
-              setDashboardInitialModule?.(null);
-              setCurrentView('admin');
-            }}
+            onPress={handleAdminPress}
             activeOpacity={0.7}
           >
             {currentView === 'admin' && <View className="absolute top-0.5 w-6 h-1 rounded-full bg-primary" />}
@@ -309,3 +332,5 @@ export default function AppNavigator({
     </>
   );
 }
+
+export default React.memo(AppNavigator);

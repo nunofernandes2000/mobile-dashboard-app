@@ -74,27 +74,30 @@ export function useAuth({ bffHost, onPreferencesLoaded, onSessionExpired, onLogo
         setIsTestMode(!!profileData.simulated);
 
         try {
-          const prefRes = await fetch(`${bffHost}/preferences`, {
-            headers: { Authorization: `Bearer ${targetAccessToken}` },
-          });
-          if (prefRes.ok) {
-            const prefData = await prefRes.json();
-            if (prefData.success && prefData.preferences) {
+          const [prefRes, accessRes] = await Promise.all([
+            fetch(`${bffHost}/preferences`, {
+              headers: { Authorization: `Bearer ${targetAccessToken}` },
+            }).catch(() => null),
+            fetch(`${bffHost}/admin/access`, {
+              headers: { Authorization: `Bearer ${targetAccessToken}` },
+            }).catch(() => null),
+          ]);
+
+          if (prefRes?.ok) {
+            const prefData = await prefRes.json().catch(() => null);
+            if (prefData?.success && prefData.preferences) {
               callbacksRef.current.onPreferencesLoaded?.(prefData.preferences);
             }
           }
 
-          const accessRes = await fetch(`${bffHost}/admin/access`, {
-            headers: { Authorization: `Bearer ${targetAccessToken}` },
-          });
-          if (accessRes.ok) {
-            const accessData = await accessRes.json();
-            if (accessData.success) {
+          if (accessRes?.ok) {
+            const accessData = await accessRes.json().catch(() => null);
+            if (accessData?.success && accessData.access) {
               setModuleAccess(accessData.access);
             }
           }
         } catch (err) {
-          console.warn('Nao foi possivel carregar preferencias:', err.message);
+          console.warn('Nao foi possivel carregar preferencias ou permissoes:', err.message);
         }
       } catch (e) {
         setErrorMessage(e.message);

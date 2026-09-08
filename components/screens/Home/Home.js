@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Icon } from 'react-native-paper';
 import { Card, CardContent, Button, Header } from '../../ui';
@@ -20,7 +20,7 @@ const ALL_SERVICES_MAP = {
 
 const DEFAULT_PINNED_SERVICES = ['calendar', 'announcements', 'salas', 'upload', 'dashboard'];
 
-export default function Home({
+function Home({
   profile: userProfile,
   pinnedServices = DEFAULT_PINNED_SERVICES,
   onNavigate,
@@ -152,3 +152,5 @@ export default function Home({
     </View>
   );
 }
+
+export default memo(Home);

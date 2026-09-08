@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 import { MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { useColorScheme } from 'nativewind';
@@ -39,24 +39,27 @@ export function usePreferences({ accessToken, bffHost }) {
   const debounceTimerRef = useRef(null);
   const hasLocalModificationsRef = useRef(false);
 
-  // Carrega preferências do armazenamento local no arranque
+  // Carrega preferências do armazenamento local no arranque em paralelo
   useEffect(() => {
     (async () => {
       try {
-        const savedTheme = await tokenStorage.getItem(KEY_DARK_MODE);
+        const [savedTheme, savedNav, savedPinned] = await Promise.all([
+          tokenStorage.getItem(KEY_DARK_MODE),
+          tokenStorage.getItem(KEY_NAV_TABS),
+          tokenStorage.getItem(KEY_PINNED_SERVICES),
+        ]);
+
         if (savedTheme !== null) {
           const isDark = savedTheme === 'true';
           setIsDarkMode(isDark);
           setColorScheme(isDark ? 'dark' : 'light');
         }
 
-        const savedNav = await tokenStorage.getItem(KEY_NAV_TABS);
         if (savedNav) {
           const parsed = JSON.parse(savedNav);
           if (Array.isArray(parsed) && parsed.length >= 2) setActiveNavKeys(parsed);
         }
 
-        const savedPinned = await tokenStorage.getItem(KEY_PINNED_SERVICES);
         if (savedPinned) {
           const parsed = JSON.parse(savedPinned);
           if (Array.isArray(parsed) && parsed.length > 0) setPinnedServices(parsed);

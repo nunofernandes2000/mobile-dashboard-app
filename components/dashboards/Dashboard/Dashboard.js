@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { Icon } from 'react-native-paper';
 import BirthdayDashboard from '../Birthdays';
@@ -99,7 +99,7 @@ const DASHBOARD_COMPONENTS = {
   dtpPrevYear: FaultyDtpArtifactsPrevYearDashboard,
 };
 
-export default function Dashboard({
+function Dashboard({
   token,
   bffHost,
   onBack,
@@ -210,4 +210,6 @@ export default function Dashboard({
     </ScreenContainer>
   );
 }
+
+export default memo(Dashboard);
 

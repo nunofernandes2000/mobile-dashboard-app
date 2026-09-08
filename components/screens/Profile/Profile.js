@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { View, ScrollView, TouchableOpacity, Text, Switch } from 'react-native';
 import { Icon } from 'react-native-paper';
 import {
@@ -14,7 +14,20 @@ import {
   Header,
 } from '../../ui';
 
-export default function Profile({
+const formatCourseAcademicYears = (course) => {
+  const start = course.startYear || course.anoInicio || course.yearStart || course.ano_inicio;
+  const end = course.endYear || course.anoFim || course.yearEnd || course.ano_fim;
+  if (start && end) return `${start} — ${end}`;
+  if (start) return `Desde ${start}`;
+  if (end) return `Até ${end}`;
+  return null;
+};
+
+const extractCourseCurricularUnits = (course) => {
+  return course.ucs || course.unidadesCurriculares || course.unidades || [];
+};
+
+function Profile({
   profile: userProfile,
   isDarkMode,
   onToggleTheme,
@@ -33,19 +46,6 @@ export default function Profile({
     }
     return [String(roles)];
   }, [userProfile?.roles]);
-
-  const formatCourseAcademicYears = (course) => {
-    const start = course.startYear || course.anoInicio || course.yearStart || course.ano_inicio;
-    const end = course.endYear || course.anoFim || course.yearEnd || course.ano_fim;
-    if (start && end) return `${start} — ${end}`;
-    if (start) return `Desde ${start}`;
-    if (end) return `Até ${end}`;
-    return null;
-  };
-
-  const extractCourseCurricularUnits = (course) => {
-    return course.ucs || course.unidadesCurriculares || course.unidades || [];
-  };
 
   return (
     <View className="flex-1 bg-background dark:bg-background-dark">
@@ -322,4 +322,6 @@ export default function Profile({
     </View>
   );
 }
+
+export default memo(Profile);
 

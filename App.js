@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Platform, View, ScrollView, StatusBar, Text, Image } from 'react-native';
 import { PaperProvider, ActivityIndicator, Banner } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -16,17 +16,28 @@ export default function App() {
   const [currentView, setCurrentView] = useState('home');
   const [dashboardInitialModule, setDashboardInitialModule] = useState(null);
 
+  const preferencesRef = useRef(null);
+
+  // Callbacks com referências estáveis para o ciclo de vida de autenticação
+  const handlePreferencesLoaded = useCallback((remotePrefs) => {
+    preferencesRef.current?.applyRemotePreferences(remotePrefs);
+  }, []);
+
+  const handleSessionExpired = useCallback(() => {
+    preferencesRef.current?.resetTheme();
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    preferencesRef.current?.resetTheme();
+    setCurrentView('home');
+  }, []);
+
   // Hook de autenticação e sessão OAuth
   const auth = useAuth({
     bffHost: BFF_HOST,
-    onPreferencesLoaded: (remotePrefs) => preferences.applyRemotePreferences(remotePrefs),
-    onSessionExpired: () => {
-      preferences.resetTheme();
-    },
-    onLogout: () => {
-      preferences.resetTheme();
-      setCurrentView('home');
-    },
+    onPreferencesLoaded: handlePreferencesLoaded,
+    onSessionExpired: handleSessionExpired,
+    onLogout: handleLogout,
   });
 
   // Hook de preferências e tema (com accessToken atualizado do hook de auth)
@@ -34,6 +45,7 @@ export default function App() {
     accessToken: auth.accessToken,
     bffHost: BFF_HOST,
   });
+  preferencesRef.current = preferences;
 
   const {
     isDarkMode,

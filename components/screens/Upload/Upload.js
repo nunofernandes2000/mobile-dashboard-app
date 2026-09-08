@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Icon, ProgressBar, ActivityIndicator } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
@@ -41,7 +41,7 @@ const MEDIA_SOURCES = [
   },
 ];
 
-export default function Upload({ token, bffHost, onBack }) {
+function Upload({ token, bffHost, onBack }) {
   const [pendingFileRequests, setPendingFileRequests] = useState([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [fileRequestsErrorMessage, setFileRequestsErrorMessage] = useState(null);
@@ -60,19 +60,14 @@ export default function Upload({ token, bffHost, onBack }) {
     message: '',
   });
 
-  // Atualiza a lista periodicamente para detetar novos pedidos da web
-  useEffect(() => {
-    fetchPendingFileRequests();
-    const pollingInterval = setInterval(() => {
-      // Não faz polling se o utilizador estiver a interagir com o modal ou a enviar ficheiro
-      if (!isMediaSourcePickerVisible && !fulfillingRequestUuid) {
-        fetchPendingFileRequests(true);
-      }
-    }, 8000);
-    return () => clearInterval(pollingInterval);
-  }, [isMediaSourcePickerVisible, fulfillingRequestUuid]);
+  // Refs para verificar estado dentro do polling sem disparar re-execuções desnecessárias
+  const isMediaSourcePickerVisibleRef = useRef(isMediaSourcePickerVisible);
+  isMediaSourcePickerVisibleRef.current = isMediaSourcePickerVisible;
 
-  const fetchPendingFileRequests = async (isSilent = false) => {
+  const fulfillingRequestUuidRef = useRef(fulfillingRequestUuid);
+  fulfillingRequestUuidRef.current = fulfillingRequestUuid;
+
+  const fetchPendingFileRequests = useCallback(async (isSilent = false) => {
     if (!isSilent) setIsLoadingRequests(true);
     setFileRequestsErrorMessage(null);
     try {
@@ -85,7 +80,15 @@ export default function Upload({ token, bffHost, onBack }) {
       });
       if (!response.ok) throw new Error(`Erro na API (${response.status})`);
       const data = await response.json();
-      setPendingFileRequests(data.result || []);
+      const newResult = data.result || [];
+
+      // Evita re-render da árvore de componentes se os dados recebidos forem idênticos
+      setPendingFileRequests((prev) => {
+        if (prev.length === newResult.length && JSON.stringify(prev) === JSON.stringify(newResult)) {
+          return prev;
+        }
+        return newResult;
+      });
       setIsSimulatedRequests(!!data.simulated);
     } catch (err) {
       if (!isSilent) {
@@ -95,7 +98,19 @@ export default function Upload({ token, bffHost, onBack }) {
     } finally {
       if (!isSilent) setIsLoadingRequests(false);
     }
-  };
+  }, [bffHost, token]);
+
+  // Polling suave configurado para 20 segundos
+  useEffect(() => {
+    fetchPendingFileRequests();
+    const pollingInterval = setInterval(() => {
+      // Não faz polling se o utilizador estiver a interagir com o modal ou a enviar ficheiro
+      if (!isMediaSourcePickerVisibleRef.current && !fulfillingRequestUuidRef.current) {
+        fetchPendingFileRequests(true);
+      }
+    }, 20000);
+    return () => clearInterval(pollingInterval);
+  }, [fetchPendingFileRequests]);
 
   const pickMedia = async (sourceType) => {
     if (sourceType === 'camera') {
@@ -106,7 +121,7 @@ export default function Upload({ token, bffHost, onBack }) {
           if (!requested.granted) throw new Error('Permissão de acesso à câmara recusada.');
         }
         const result = await ImagePicker.launchCameraAsync({
-          quality: 0.85,
+          quality: 0.7,
           allowsEditing: false,
         });
         if (result.canceled || !result.assets?.[0]) return null;
@@ -132,7 +147,7 @@ export default function Upload({ token, bffHost, onBack }) {
         }
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
-          quality: 0.85,
+          quality: 0.7,
           allowsEditing: false,
         });
         if (result.canceled || !result.assets?.[0]) return null;
@@ -368,7 +383,7 @@ export default function Upload({ token, bffHost, onBack }) {
 
         <View className="flex-row justify-between items-center mb-4">
           <Badge variant="secondary" icon="sync" size="sm">
-            Atualização automática (5s)
+            Atualização automática (20s)
           </Badge>
           {isSimulatedRequests && (
             <Badge variant="warning" icon="alert-decagram-outline" size="sm">
@@ -473,3 +488,5 @@ export default function Upload({ token, bffHost, onBack }) {
     </ScreenContainer>
   );
 }
+
+export default memo(Upload);
