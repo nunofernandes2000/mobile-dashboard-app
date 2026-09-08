@@ -34,6 +34,11 @@ export function usePreferences({ accessToken, bffHost }) {
   const [pinnedServices, setPinnedServices] = useState(DEFAULT_PINNED_SERVICES);
   const [activeNavKeys, setActiveNavKeys] = useState(DEFAULT_ACTIVE_NAV_KEYS);
 
+  // Flags para evitar race conditions e debounce de sincronização
+  const pendingBffUpdatesRef = useRef({});
+  const debounceTimerRef = useRef(null);
+  const hasLocalModificationsRef = useRef(false);
+
   // Carrega preferências do armazenamento local no arranque
   useEffect(() => {
     (async () => {
@@ -48,7 +53,7 @@ export function usePreferences({ accessToken, bffHost }) {
         const savedNav = await tokenStorage.getItem(KEY_NAV_TABS);
         if (savedNav) {
           const parsed = JSON.parse(savedNav);
-          if (Array.isArray(parsed) && parsed.length > 0) setActiveNavKeys(parsed);
+          if (Array.isArray(parsed) && parsed.length >= 2) setActiveNavKeys(parsed);
         }
 
         const savedPinned = await tokenStorage.getItem(KEY_PINNED_SERVICES);
@@ -62,30 +67,45 @@ export function usePreferences({ accessToken, bffHost }) {
     })();
   }, [setColorScheme]);
 
-  // Sincroniza preferências com o BFF na cloud
+  // Sincroniza preferências com o BFF de forma debounced (evita requisições concorrentes e sobrescritas)
   const savePreferencesToBFF = useCallback(
-    async (preferenceUpdates) => {
+    (preferenceUpdates) => {
       if (!accessToken || !bffHost) return;
-      try {
-        const res = await fetch(`${bffHost}/preferences`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify(preferenceUpdates),
-        });
-        if (res.ok) {
-          console.log('[PREFERENCES] Guardado na cloud/BD com sucesso:', preferenceUpdates);
-        }
-      } catch (e) {
-        console.warn('Erro ao sincronizar preferências com o BFF:', e.message);
+
+      hasLocalModificationsRef.current = true;
+      pendingBffUpdatesRef.current = {
+        ...pendingBffUpdatesRef.current,
+        ...preferenceUpdates,
+      };
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
+
+      debounceTimerRef.current = setTimeout(async () => {
+        const payload = { ...pendingBffUpdatesRef.current };
+        pendingBffUpdatesRef.current = {};
+        try {
+          const res = await fetch(`${bffHost}/preferences`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            console.log('[PREFERENCES] Sincronizado com o servidor com sucesso:', payload);
+          }
+        } catch (e) {
+          console.warn('Erro ao sincronizar preferências com o servidor:', e.message);
+        }
+      }, 400);
     },
     [accessToken, bffHost]
   );
 
-  // Helper para persistir localmente e sincronizar com o BFF
+  // Helper para persistir localmente e sincronizar em background com o BFF
   const persistAndSync = useCallback(
     (storageKey, value, bffPayload) => {
       const serialized = typeof value === 'string' ? value : JSON.stringify(value);
@@ -95,79 +115,90 @@ export function usePreferences({ accessToken, bffHost }) {
     [savePreferencesToBFF]
   );
 
-  // Alterna ou força o modo claro / escuro de forma instantânea
+  // Alterna ou força o modo claro / escuro de forma 100% instantânea
   const handleToggleTheme = useCallback(
     (forceDarkModeState) => {
-      const nextMode = typeof forceDarkModeState === 'boolean' ? forceDarkModeState : !isDarkMode;
-      setIsDarkMode(nextMode);
-      setColorScheme(nextMode ? 'dark' : 'light');
-
-      // Persistência em background sem bloquear o UI thread
-      setTimeout(() => {
+      setIsDarkMode((prev) => {
+        const nextMode = typeof forceDarkModeState === 'boolean' ? forceDarkModeState : !prev;
+        setColorScheme(nextMode ? 'dark' : 'light');
         persistAndSync(KEY_DARK_MODE, nextMode ? 'true' : 'false', { darkMode: nextMode });
-      }, 0);
+        return nextMode;
+      });
     },
-    [isDarkMode, setColorScheme, persistAndSync]
+    [setColorScheme, persistAndSync]
   );
 
   // Fixa ou desfixa um serviço dos favoritos
   const handleTogglePin = useCallback(
     (serviceId) => {
-      const updated = pinnedServices.includes(serviceId)
-        ? pinnedServices.filter((id) => id !== serviceId)
-        : [...pinnedServices, serviceId];
-
-      setPinnedServices(updated);
-      setTimeout(() => {
+      setPinnedServices((prev) => {
+        const updated = prev.includes(serviceId)
+          ? prev.filter((id) => id !== serviceId)
+          : [...prev, serviceId];
         persistAndSync(KEY_PINNED_SERVICES, updated, { pinnedServices: updated });
-      }, 0);
+        return updated;
+      });
     },
-    [pinnedServices, persistAndSync]
+    [persistAndSync]
   );
 
   // Reordena os serviços afixados
   const handleReorderPinnedServices = useCallback(
     (newOrder) => {
       setPinnedServices(newOrder);
-      setTimeout(() => {
-        persistAndSync(KEY_PINNED_SERVICES, newOrder, { pinnedServices: newOrder });
-      }, 0);
+      persistAndSync(KEY_PINNED_SERVICES, newOrder, { pinnedServices: newOrder });
     },
     [persistAndSync]
   );
 
-  // Adiciona ou remove itens da barra de navegação (limite: 2 a 5)
-  const handleToggleNavItem = useCallback(
-    (navItemKey) => {
-      if (activeNavKeys.includes(navItemKey)) {
-        if (activeNavKeys.length <= 2) {
-          Alert.alert('Atenção', 'Mantenha pelo menos 2 atalhos ativos na barra de navegação.');
-          return;
-        }
-        const updated = activeNavKeys.filter((k) => k !== navItemKey);
-        setActiveNavKeys(updated);
-        setTimeout(() => {
-          persistAndSync(KEY_NAV_TABS, updated, { activeNavTabs: updated });
-        }, 0);
-      } else {
-        if (activeNavKeys.length >= 5) {
-          Alert.alert('Limite Atingido', 'Pode ter no máximo 5 atalhos ativos na barra inferior.');
-          return;
-        }
-        const updated = [...activeNavKeys, navItemKey];
-        setActiveNavKeys(updated);
-        setTimeout(() => {
-          persistAndSync(KEY_NAV_TABS, updated, { activeNavTabs: updated });
-        }, 0);
+  // Guarda atalhos da barra de navegação de forma consolidada
+  const handleSaveNavTabs = useCallback(
+    (newTabs) => {
+      if (!Array.isArray(newTabs) || newTabs.length < 2 || newTabs.length > 5) {
+        Alert.alert('Atenção', 'Selecione entre 2 e 5 atalhos para a barra inferior.');
+        return;
       }
+      setActiveNavKeys(newTabs);
+      persistAndSync(KEY_NAV_TABS, newTabs, { activeNavTabs: newTabs });
     },
-    [activeNavKeys, persistAndSync]
+    [persistAndSync]
   );
 
-  // Aplica preferências recebidas da API do BFF
+  // Adiciona ou remove itens da barra de navegação (retrocompatibilidade)
+  const handleToggleNavItem = useCallback(
+    (navItemKey) => {
+      setActiveNavKeys((prev) => {
+        if (prev.includes(navItemKey)) {
+          if (prev.length <= 2) {
+            Alert.alert('Atenção', 'Mantenha pelo menos 2 atalhos ativos na barra de navegação.');
+            return prev;
+          }
+          const updated = prev.filter((k) => k !== navItemKey);
+          persistAndSync(KEY_NAV_TABS, updated, { activeNavTabs: updated });
+          return updated;
+        } else {
+          if (prev.length >= 5) {
+            Alert.alert('Limite Atingido', 'Pode ter no máximo 5 atalhos ativos na barra inferior.');
+            return prev;
+          }
+          const updated = [...prev, navItemKey];
+          persistAndSync(KEY_NAV_TABS, updated, { activeNavTabs: updated });
+          return updated;
+        }
+      });
+    },
+    [persistAndSync]
+  );
+
+  // Aplica preferências recebidas da API do BFF (apenas se o utilizador não tiver alterado localmente)
   const applyRemotePreferences = useCallback(
     (preferences) => {
       if (!preferences) return;
+      if (hasLocalModificationsRef.current) {
+        console.log('[PREFERENCES] Ignoradas preferências remotas obsoletas (existem modificações locais recentes)');
+        return;
+      }
+
       const { darkMode, pinnedServices: remotePinned, activeNavTabs } = preferences;
 
       if (darkMode !== undefined) {
@@ -182,7 +213,7 @@ export function usePreferences({ accessToken, bffHost }) {
         tokenStorage.setItem(KEY_PINNED_SERVICES, JSON.stringify(remotePinned)).catch(() => { });
       }
 
-      if (Array.isArray(activeNavTabs) && activeNavTabs.length > 0) {
+      if (Array.isArray(activeNavTabs) && activeNavTabs.length >= 2) {
         setActiveNavKeys(activeNavTabs);
         tokenStorage.setItem(KEY_NAV_TABS, JSON.stringify(activeNavTabs)).catch(() => { });
       }
@@ -192,6 +223,7 @@ export function usePreferences({ accessToken, bffHost }) {
 
   // Reseta estado do tema para o padrão (modo claro)
   const resetTheme = useCallback(() => {
+    hasLocalModificationsRef.current = false;
     setIsDarkMode(false);
     setColorScheme('light');
   }, [setColorScheme]);
@@ -211,6 +243,7 @@ export function usePreferences({ accessToken, bffHost }) {
     handleTogglePin,
     handleReorderPinnedServices,
     handleToggleNavItem,
+    handleSaveNavTabs,
     applyRemotePreferences,
     resetTheme,
     setIsDarkMode,

@@ -23,22 +23,6 @@ export default function Profile({
 }) {
   const [isRolesModalVisible, setIsRolesModalVisible] = useState(false);
   const [selectedCourseForModal, setSelectedCourseForModal] = useState(null);
-  const [switchValue, setSwitchValue] = useState(isDarkMode);
-  const isPendingRef = useRef(false);
-
-  // Handler para alternar o modo escuro (bloqueia toggle enquanto o tema está a ser alterado)
-  const handleSwitchToggle = useCallback(
-    (nextVal) => {
-      if (isPendingRef.current) return;
-      isPendingRef.current = true;
-      setSwitchValue(nextVal);
-      onToggleTheme(nextVal);
-      setTimeout(() => {
-        isPendingRef.current = false;
-      }, 400);
-    },
-    [onToggleTheme]
-  );
 
   // Normaliza lista de roles do utilizador de forma declarativa
   const normalizedRolesList = useMemo(() => {
@@ -240,10 +224,10 @@ export default function Profile({
                 </Text>
               </View>
               <Switch
-                value={switchValue}
-                onValueChange={handleSwitchToggle}
+                value={isDarkMode}
+                onValueChange={onToggleTheme}
                 trackColor={{ false: '#cbd5e1', true: '#ffb74d' }}
-                thumbColor={switchValue ? '#ff9800' : '#f8fafc'}
+                thumbColor={isDarkMode ? '#ff9800' : '#f8fafc'}
               />
             </View>
           </CardContent>

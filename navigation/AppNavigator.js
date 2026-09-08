@@ -38,6 +38,7 @@ export default function AppNavigator({
   onReorderPinnedServices,
   activeNavKeys,
   onToggleNavItem,
+  onSaveNavTabs,
   hasAccessToModule,
   isAdmin,
   errorMessage,
@@ -45,6 +46,42 @@ export default function AppNavigator({
   onLogout,
 }) {
   const [showNavConfigModal, setShowNavConfigModal] = useState(false);
+  const [tempNavKeys, setTempNavKeys] = useState(activeNavKeys);
+
+  const handleOpenNavConfig = () => {
+    setTempNavKeys(activeNavKeys);
+    setShowNavConfigModal(true);
+  };
+
+  const handleToggleTempItem = (key) => {
+    if (tempNavKeys.includes(key)) {
+      if (tempNavKeys.length <= 2) {
+        Alert.alert('Atenção', 'Mantenha pelo menos 2 atalhos selecionados.');
+        return;
+      }
+      setTempNavKeys(tempNavKeys.filter((k) => k !== key));
+    } else {
+      if (tempNavKeys.length >= 5) {
+        Alert.alert('Limite Atingido', 'Pode ter no máximo 5 atalhos ativos na barra inferior.');
+        return;
+      }
+      setTempNavKeys([...tempNavKeys, key]);
+    }
+  };
+
+  const handleSaveNavConfig = () => {
+    if (onSaveNavTabs) {
+      onSaveNavTabs(tempNavKeys);
+    } else if (onToggleNavItem) {
+      tempNavKeys.forEach((k) => {
+        if (!activeNavKeys.includes(k)) onToggleNavItem(k);
+      });
+      activeNavKeys.forEach((k) => {
+        if (!tempNavKeys.includes(k)) onToggleNavItem(k);
+      });
+    }
+    setShowNavConfigModal(false);
+  };
 
   return (
     <>
@@ -200,7 +237,7 @@ export default function AppNavigator({
 
         <TouchableOpacity
           className="flex-1 h-[56px] items-center justify-center py-1 px-0.5"
-          onPress={() => setShowNavConfigModal(true)}
+          onPress={handleOpenNavConfig}
           activeOpacity={0.7}
         >
           <View className="items-center justify-center mt-1">
@@ -236,14 +273,14 @@ export default function AppNavigator({
 
             {ALL_NAV_ITEMS.map((item) => {
               if (!hasAccessToModule(item.view)) return null;
-              const isSelected = activeNavKeys.includes(item.view);
+              const isSelected = tempNavKeys.includes(item.view);
               return (
                 <TouchableOpacity
                   key={`nav-cfg-${item.view}`}
                   className={`flex-row items-center justify-between py-2.5 px-3 rounded-xl mb-1.5 ${
                     isSelected ? 'bg-primary/15 dark:bg-primary/20' : 'bg-transparent'
                   }`}
-                  onPress={() => onToggleNavItem(item.view)}
+                  onPress={() => handleToggleTempItem(item.view)}
                 >
                   <View className="flex-row items-center">
                     <Icon source={item.icon} size={20} color={isSelected ? '#f57c00' : '#94a3b8'} />
@@ -261,7 +298,7 @@ export default function AppNavigator({
             })}
 
             <TouchableOpacity
-              onPress={() => setShowNavConfigModal(false)}
+              onPress={handleSaveNavConfig}
               className="mt-4 bg-primary h-11 rounded-xl items-center justify-center"
             >
               <Text className="text-white font-bold text-sm">Guardar & Concluir</Text>

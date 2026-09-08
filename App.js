@@ -44,6 +44,7 @@ export default function App() {
     handleTogglePin,
     handleReorderPinnedServices,
     handleToggleNavItem,
+    handleSaveNavTabs,
   } = preferences;
 
   // Redireciona para o ecrã inicial quando não existe sessão ativa
@@ -133,6 +134,7 @@ export default function App() {
               onReorderPinnedServices={handleReorderPinnedServices}
               activeNavKeys={activeNavKeys}
               onToggleNavItem={handleToggleNavItem}
+              onSaveNavTabs={handleSaveNavTabs}
               hasAccessToModule={auth.hasAccessToModule}
               isAdmin={auth.isAdmin}
               errorMessage={auth.errorMessage}
