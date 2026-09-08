@@ -1,22 +1,22 @@
-import React from 'react';
-import { View, Image, Text, Alert } from 'react-native';
-import { Icon } from 'react-native-paper';
-import { Button, Badge } from '../../ui';
+import React from "react";
+import { View, Image, Text, Alert } from "react-native";
+import { Icon } from "react-native-paper";
+import { Button, Badge } from "../../ui";
 
 // Ecrã de login institucional do Politécnico de Portalegre
 export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
   // DEMO_TOKEN só esta aqui para apresentação da universidade
   const handlePressDemo = () => {
     Alert.alert(
-      'Modo Demonstração',
-      'Pretende aceder ao modo de demonstração com dados simulados para apresentação institucional?',
+      "Modo Demonstração",
+      "Pretende aceder ao modo de demonstração com dados simulados para apresentação institucional?",
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: "Cancelar", style: "cancel" },
         {
-          text: 'Entrar',
+          text: "Entrar",
           onPress: onDemoLogin,
         },
-      ]
+      ],
     );
   };
 
@@ -25,7 +25,7 @@ export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
       <View className="items-center pt-1.5 pb-1">
         <View className="w-full items-center justify-center py-3 px-4 mb-2.5">
           <Image
-            source={require('../../../assets/upp_logo_clean.png')}
+            source={require("../../../assets/upp_logo_clean.png")}
             className="w-[290px] h-[62px]"
             resizeMode="contain"
           />
@@ -50,7 +50,8 @@ export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
           Iniciar Sessão
         </Text>
         <Text className="text-sm leading-5 text-slate-600">
-          Aceda à sua área pessoal, horários, salas, avaliações e dashboards institucionais.
+          Aceda à sua área pessoal, horários, salas, avaliações e dashboards
+          institucionais.
         </Text>
 
         <Button
@@ -84,7 +85,8 @@ export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
             </Text>
           </View>
           <Text className="text-xs leading-5 text-slate-600">
-            Utilize o seu endereço de email institucional (@ipportalegre.pt) e a respetiva palavra-passe da rede académica.
+            Utilize o seu endereço de email institucional (@ipportalegre.pt ou
+            @uportalegre) e a respetiva palavra-passe da rede académica.
           </Text>
         </View>
 
@@ -95,9 +97,14 @@ export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
             Universidade Politécnica
           </Text>
           <View className="flex-row flex-wrap justify-center gap-2">
-            {['ESTGD', 'ESECS', 'ESS', 'ESAE'].map((schoolAcronym) => (
-              <View key={schoolAcronym} className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-100">
-                <Text className="text-[11px] font-semibold text-slate-700">{schoolAcronym}</Text>
+            {["ESTGD", "ESECS", "ESS", "ESAE"].map((schoolAcronym) => (
+              <View
+                key={schoolAcronym}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-100"
+              >
+                <Text className="text-[11px] font-semibold text-slate-700">
+                  {schoolAcronym}
+                </Text>
               </View>
             ))}
           </View>
@@ -112,4 +119,3 @@ export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
     </View>
   );
 }
-
