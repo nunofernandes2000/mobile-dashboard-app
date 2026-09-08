@@ -98,7 +98,12 @@ export function usePreferences({ accessToken, bffHost }) {
             body: JSON.stringify(payload),
           });
           if (res.ok) {
-            console.log('[PREFERENCES] Sincronizado com o servidor com sucesso:', payload);
+            const isDemo = typeof accessToken === 'string' && accessToken.includes('DEMO_SESSION_SIMULATED_TOKEN');
+            if (isDemo) {
+              console.log('[PREFERENCES] [MODO DEMO] Atualizado apenas em memória local:', payload);
+            } else {
+              console.log('[PREFERENCES] Sincronizado com o servidor com sucesso:', payload);
+            }
           }
         } catch (e) {
           console.warn('Erro ao sincronizar preferências com o servidor:', e.message);
