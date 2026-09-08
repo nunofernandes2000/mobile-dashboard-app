@@ -1,3 +1,4 @@
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 import { handleMockRequest } from './mockApiHandler';
 
 export const DEMO_TOKEN = 'DEMO_SESSION_SIMULATED_TOKEN';

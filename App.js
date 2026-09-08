@@ -10,8 +10,7 @@ import { useAuth } from './hooks/useAuth';
 import AppNavigator from './navigation/AppNavigator';
 import { setupMockInterceptor } from './services/mock/mockInterceptor';
 
-// Ativa o intercetor de rede para pedidos da sessão de demonstração
-//isto só esta aqui para apresentaç
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 setupMockInterceptor();
 
 const BFF_HOST = Config?.API_URL || 'http://localhost:3000';
@@ -81,6 +80,7 @@ export default function App() {
             translucent={Platform.OS === 'android'}
           />
 
+          {/* DEMO_TOKEN só esta aqui para apresentação da universidade */}
           {auth.isTestMode && (
             <View className="bg-amber-600 py-1.5 px-3 items-center justify-center flex-row gap-1.5">
               <Icon source="presentation" size={14} color="#ffffff" />
@@ -132,6 +132,7 @@ export default function App() {
               )}
 
               {!auth.isLoading && (!auth.accessToken || !auth.userProfile) && (
+                // DEMO_TOKEN só esta aqui para apresentação da universidade
                 <Login
                   onLogin={auth.handleLogin}
                   onDemoLogin={auth.handleDemoLogin}

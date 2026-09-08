@@ -1,3 +1,4 @@
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 const simulatedCalendarEvents = [
     {
         timestamp: Date.now() + 86400000 * 5,

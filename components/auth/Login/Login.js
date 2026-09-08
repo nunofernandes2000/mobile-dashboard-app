@@ -48,6 +48,7 @@ export default function Login({ onLogin: handleInitiateLogin, onDemoLogin }) {
           Entrar com Conta UPP / IPP
         </Button>
 
+        {/* DEMO_TOKEN só esta aqui para apresentação da universidade */}
         {onDemoLogin && (
           <Button
             variant="secondary"

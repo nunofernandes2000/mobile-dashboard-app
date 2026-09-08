@@ -229,7 +229,7 @@ export function useAuth({ bffHost, onPreferencesLoaded, onSessionExpired, onLogo
     [persistAccessToken]
   );
 
-  // Inicia sessão direta em modo de demonstração/simulação para o Júri
+  // DEMO_TOKEN só esta aqui para apresentação da universidade (modo demonstração juri)
   const handleDemoLogin = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);

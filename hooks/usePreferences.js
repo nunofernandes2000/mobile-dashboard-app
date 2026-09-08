@@ -98,6 +98,7 @@ export function usePreferences({ accessToken, bffHost }) {
             body: JSON.stringify(payload),
           });
           if (res.ok) {
+            // DEMO_TOKEN só esta aqui para apresentação da universidade
             const isDemo = typeof accessToken === 'string' && accessToken.includes('DEMO_SESSION_SIMULATED_TOKEN');
             if (isDemo) {
               console.log('[PREFERENCES] [MODO DEMO] Atualizado apenas em memória local:', payload);

@@ -1,3 +1,4 @@
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 const simulatedBirthdays = {
     updateDate: "2026-07-22 11:11:00.0",
     saveDate: "2026-07-01 00:01:01.0",

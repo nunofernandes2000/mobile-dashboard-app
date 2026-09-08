@@ -1,3 +1,4 @@
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 import { getMockProfile } from './mockProfile';
 import { generateSimulatedSchedule } from './mockSchedule';
 import { generateSimulatedCalendar } from './mockCalendar';

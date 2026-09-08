@@ -1,3 +1,4 @@
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 export const SIMULATED_ROOMS = [
   { cdSala: 4001, descricao: 'Lab. Informática 1', cdEdificio: 7, descricaoEdificio: 'ESTG - Edifício Central' },
   { cdSala: 4002, descricao: 'Lab. Informática 2', cdEdificio: 7, descricaoEdificio: 'ESTG - Edifício Central' },

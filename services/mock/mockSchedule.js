@@ -1,3 +1,4 @@
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 function getCourseDetail(course, index) {
     if (!course) return null;
     if (typeof course === 'string') {

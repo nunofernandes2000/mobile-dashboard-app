@@ -1,3 +1,4 @@
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 // Extrai a lista de UCs do utilizador a partir do perfil ou do token
 export function extractUserUcs(userProfileData, jwtTokenPayload) {
   const userCurricularUnits = [];

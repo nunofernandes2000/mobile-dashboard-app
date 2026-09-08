@@ -1,3 +1,4 @@
+// DEMO_TOKEN só esta aqui para apresentação da universidade
 const simulatedAnnouncements = [
     {
         timestamp: 1784397170000,
