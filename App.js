@@ -9,6 +9,7 @@ import { usePreferences } from './hooks/usePreferences';
 import { useAuth } from './hooks/useAuth';
 import AppNavigator from './navigation/AppNavigator';
 
+// Endereço base do servidor BFF definido dinamicamente pelo ambiente ativo (produção, emulador ou rede local)
 const BFF_HOST = Config?.API_URL || 'http://localhost:3000';
 console.log(`[APP CONFIG] Loaded ENV: '${Config?.ENV}' | BFF_HOST: '${BFF_HOST}'`);
 

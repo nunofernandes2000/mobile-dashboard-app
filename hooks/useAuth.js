@@ -111,6 +111,10 @@ export function useAuth({ bffHost, onPreferencesLoaded, onSessionExpired, onLogo
   // Persiste o token de acesso e carrega dados de sessão
   const persistAccessToken = useCallback(
     async (newToken) => {
+      console.log('\n======================================================');
+      console.log('[TOKEN JWT - NOVO LOGIN]');
+      console.log(newToken);
+      console.log('======================================================\n');
       setIsLoading(true);
       setAccessToken(newToken);
       await tokenStorage.setItem(SECURE_KEY_TOKEN, newToken);
@@ -126,6 +130,10 @@ export function useAuth({ bffHost, onPreferencesLoaded, onSessionExpired, onLogo
       try {
         const savedToken = await tokenStorage.getItem(SECURE_KEY_TOKEN);
         if (savedToken && isMounted) {
+          console.log('\n======================================================');
+          console.log('[TOKEN JWT - SESSAO ATIVA SECURESTORE]');
+          console.log(savedToken);
+          console.log('======================================================\n');
           setAccessToken(savedToken);
           await fetchUserProfileAndSettings(savedToken);
         }
